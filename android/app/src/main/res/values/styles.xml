@@ -16,7 +16,8 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
-        <item name="android:windowBackground">@color/ic_launcher_background</item>
+        <!-- Behind the WebView's first paint: the same ground the boot sticker uses. -->
+        <item name="android:windowBackground">@color/boot_ground</item>
         <item name="android:statusBarColor">@color/status_bar</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
@@ -34,9 +35,12 @@
         <item name="android:windowSoftInputMode">stateVisible|adjustResize</item>
     </style>
 
+    <!-- Launch window: one flat ground colour, no seam into the boot sticker. The screen ignores
+         this and paints the queue the moment it is ready. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@color/ic_launcher_background</item>
-        <item name="android:statusBarColor">@color/status_bar</item>
+        <item name="android:background">@color/boot_ground</item>
+        <item name="android:windowBackground">@color/boot_ground</item>
+        <item name="android:statusBarColor">@color/boot_ground</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

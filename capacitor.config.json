@@ -4,7 +4,7 @@
   "webDir": "dist",
   "androidStatusBar": {
     "style": "DARK",
-    "backgroundColor": "#0a101d",
+    "backgroundColor": "#131315",
     "overlayWebView": false
   }
 }

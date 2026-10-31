@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The colour the Android window is painted with before the WebView draws anything.
+         It matches the app's dark ground so launch has no seam: window -> boot sticker -> queue.
+         Keep in sync with --bg (dark) in src/style.css and the boot block in index.html. -->
+    <color name="boot_ground">#131315</color>
+</resources>

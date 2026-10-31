@@ -70,16 +70,15 @@ const subtitle = computed(() => {
   return parts.join(' · ') || 'No active downloads'
 })
 
-// One tap to stop or restart the whole lane.
+// One tap to stop or restart the whole lane — the same pause the exit sheet offers.
 const runningCount = computed(() => items.value.filter((i) => ['downloading', 'retrying', 'queued'].includes(i.status)).length)
 const heldCount = computed(() => items.value.filter((i) => ['paused', 'error'].includes(i.status)).length)
-function toggleAll() {
+async function toggleAll() {
   if (runningCount.value) {
-    items.value.filter((i) => i.status === 'downloading' || i.status === 'retrying').forEach((i) => store.pause(i.id))
-    items.value.filter((i) => i.status === 'queued').forEach((i) => { i.status = 'paused' })
-    showToast('All downloads paused')
+    const n = await store.pauseAll()
+    showToast(n ? `Paused ${n} download${n === 1 ? '' : 's'}` : 'All downloads paused')
   } else {
-    items.value.filter((i) => i.status === 'paused').forEach((i) => store.resume(i.id))
+    store.resumeAll()
     showToast('Queue resumed')
   }
 }

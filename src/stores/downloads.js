@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Network } from '@capacitor/network'
 import { YtDlp } from '../services/ytdlp'
 import { Aria2 } from '../services/aria2'
@@ -71,16 +71,28 @@ export const useDownloadsStore = defineStore('downloads', () => {
     if (items.value.some((i) => i.status === 'downloading')) pushWidget()
   }, 2000)
 
+  // Anything in motion: live jobs, pending retries, rows waiting for a slot or for the charger.
+  // The status strip only earns its place on screen while this is true, so an idle app has a
+  // clean bottom edge instead of a badge that says nothing happened.
+  const busy = computed(() =>
+    waitingCharger.value || items.value.some((i) => ['downloading', 'retrying', 'queued'].includes(i.status))
+  )
+
   const engineOf = (item) => (item.kind === 'file' || item.kind === 'torrent' ? Aria2 : YtDlp)
   const byId = (id) => items.value.find((i) => i.id === id)
   const byJob = (jobId) => items.value.find((i) => i.jobId === jobId)
 
+  // Write the list right now instead of waiting for the debounce below. Used before the app
+  // closes: pausing and quitting in one tap must not lose the paused state on the way out.
+  function persist() {
+    clearTimeout(saveTimer)
+    const clean = items.value.map((i) => Object.fromEntries(Object.entries(i).filter(([k]) => !k.startsWith('_'))))
+    try { localStorage.setItem(KEY, JSON.stringify(clean)) } catch { /* storage full */ }
+  }
+
   function save() {
     clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => {
-      const clean = items.value.map((i) => Object.fromEntries(Object.entries(i).filter(([k]) => !k.startsWith('_'))))
-      try { localStorage.setItem(KEY, JSON.stringify(clean)) } catch { /* storage full */ }
-    }, 800)
+    saveTimer = setTimeout(persist, 800)
   }
   watch(items, save, { deep: true })
 
@@ -532,6 +544,22 @@ export const useDownloadsStore = defineStore('downloads', () => {
     pump()
   }
 
+  // The whole lane at once: the queue's "Pause all" and the exit sheet share this, so both
+  // stop live jobs at the engine, drop any pending retry and leave queued rows waiting.
+  // Returns how many records changed so callers can say what happened.
+  async function pauseAll() {
+    const live = items.value.filter((i) => ['downloading', 'queued', 'retrying'].includes(i.status))
+    await Promise.all(live.map((i) => pause(i.id)))
+    return live.length
+  }
+
+  // Mirror of pauseAll: every held row goes back in the queue and the pump picks up the limit.
+  function resumeAll() {
+    const held = items.value.filter((i) => i.status === 'paused')
+    held.forEach((i) => resume(i.id))
+    return held.length
+  }
+
   // Skip the line: start now even if the simultaneous limit is reached.
   function startNow(id) {
     const item = byId(id)
@@ -581,5 +609,5 @@ export const useDownloadsStore = defineStore('downloads', () => {
     ;[items.value[a], items.value[b]] = [items.value[b], items.value[a]]
   }
 
-  return { items, speedHistory, charging, waitingCharger, byId, init, add, pause, resume, startNow, cancel, remove, restore, clearFinished, move, pump }
+  return { items, busy, speedHistory, charging, waitingCharger, byId, init, add, pause, resume, pauseAll, resumeAll, startNow, cancel, remove, restore, clearFinished, move, pump, persist }
 })

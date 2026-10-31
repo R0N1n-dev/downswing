@@ -1,13 +1,51 @@
 <!doctype html>
-<html lang="en" data-theme="dark" data-palette="default">
+<html lang="en" class="booting" data-theme="dark" data-palette="default">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="dark light" />
     <title>Downly</title>
+
+    <!-- Theme before the first frame. Waiting for main.js would flash the default dark ground
+         at light-theme users, and a colour flip right at launch reads as a glitch. -->
+    <script>
+      try {
+        const saved = JSON.parse(localStorage.getItem('downly.settings') || '{}')
+        const dark = saved.theme === 'system'
+          ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          : saved.theme !== 'light'
+        const root = document.documentElement
+        root.setAttribute('data-theme', dark ? 'dark' : 'light')
+        if (saved.palette) root.setAttribute('data-palette', saved.palette)
+      } catch { /* first run: keep the dark default */ }
+    </script>
+
+    <!-- The boot sticker, inline so it paints with the document instead of after the bundle.
+         It is the launcher mark on the app ground: main.js fades it out once the app is on
+         screen and the fonts are in, so the window opens instead of shuffling into place. -->
+    <style>
+      html { background: #131315; }
+      html[data-theme='light'] { background: #EFEAE0; }
+      #boot { position: fixed; inset: 0; z-index: 999; display: grid; place-items: center;
+        background: #131315; transition: opacity 0.18s linear; }
+      html[data-theme='light'] #boot { background: #EFEAE0; }
+      #boot svg { width: 96px; height: 96px; display: block; }
+      #boot.done { opacity: 0; pointer-events: none; }
+      @media (prefers-reduced-motion: reduce) { #boot { transition: none; } }
+    </style>
   </head>
   <body>
+    <div id="boot" aria-hidden="true">
+      <svg viewBox="0 0 108 108">
+        <rect x="2" y="2" width="104" height="104" rx="24" fill="#FFF3B0" stroke="#0E0E10" stroke-width="4"/>
+        <g transform="translate(54,54) scale(1.32) translate(-54,-54)">
+          <path d="M67.5,30.62 A27,27 0 1 1 40.5,30.62" fill="none" stroke="#0E0E10" stroke-width="9" stroke-linecap="round"/>
+          <path d="M59.7,35.5 L37.7,61.9 L57.5,61.9 L55.3,79.5 L77.3,53.1 L57.5,53.1 Z" fill="#0E0E10"/>
+          <path d="M56.2,32 L34.2,58.4 L54,58.4 L51.8,76 L73.8,49.6 L54,49.6 Z" fill="#A8E6CF" stroke="#0E0E10" stroke-width="3.5" stroke-linejoin="round"/>
+        </g>
+      </svg>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

@@ -129,6 +129,14 @@ button:disabled { cursor: default; opacity: 0.6; }
 /* The screen renders in place — no entrance slide, so nothing jitters when the app opens.
    Rows still stagger in individually where the list actually changes. */
 
+/* ...and while the boot sticker is up (html.booting, cleared by main.js) nothing enters at all:
+   the first paint is already the app at rest, so revealing it is a fade, not a shuffle. */
+html.booting .row,
+html.booting .preview-card,
+html.booting .batch-bar,
+html.booting .toast,
+html.booting .stat-strip { animation: none; }
+
 .toast { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--sab) + 78px);
   display: flex; align-items: center; gap: 14px; background: var(--ink); color: var(--paper);
   border: 3px solid var(--ink); border-radius: 13px; box-shadow: var(--sh-sm);

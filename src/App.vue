@@ -2,11 +2,14 @@
 import { onMounted, onBeforeUnmount, watch, ref, computed } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import { App as CapApp } from '@capacitor/app'
+import { Capacitor } from '@capacitor/core'
 import { Clipboard } from '@capacitor/clipboard'
 import Dock from './components/Dock.vue'
 import SideNav from './components/SideNav.vue'
 import ShareSheet from './components/ShareSheet.vue'
+import ConfirmSheet from './components/ConfirmSheet.vue'
 import { SECTIONS } from './lib/sections'
+import { nextBackAction } from './lib/back'
 import { useDownloadsStore } from './stores/downloads'
 import { useSettingsStore } from './stores/settings'
 import { toast, toastAct, runToastAction, showToast } from './lib/toast'
@@ -23,10 +26,14 @@ const settings = useSettingsStore().s
 const screen = ref(null)
 const unlocking = ref(false)
 const sharedLinks = ref([])
+// '' = the exit confirm is closed, 'plain' = "Exit Downly?", 'pause' = "Pause & exit?"
+const exitMode = ref('')
 let backHandle
 let resumeHandle
 
-const showDock = computed(() => SECTIONS.some((s) => s.id === route.meta.section))
+// The status strip lives at the bottom of section screens, but only while the queue is moving:
+// an idle app keeps that space for the list.
+const showDock = computed(() => SECTIONS.some((s) => s.id === route.meta.section) && downloads.busy)
 
 watch(() => route.fullPath, () => screen.value?.scrollTo({ top: 0 }))
 
@@ -99,25 +106,113 @@ async function onUnlock() {
   try { await unlock() } finally { unlocking.value = false }
 }
 
+// Downloads still moving: live jobs, pending retries and rows waiting for a slot.
+const ongoing = computed(() => downloads.items.filter((i) => ['downloading', 'queued', 'retrying'].includes(i.status)))
+
+// What the queue's back press asks. Live work gets the pause question first; an idle queue
+// gets the plain exit confirm. Both read "stay" on cancel, so a stray press never quits.
+const exitAsk = computed(() => {
+  if (!exitMode.value) return null
+  const n = ongoing.value.length
+  if (exitMode.value === 'pause' && n) {
+    return {
+      title: 'Pause & exit?',
+      note: `${n} download${n === 1 ? ' is' : 's are'} still running. Pausing ${n === 1 ? 'it' : 'them'} keeps the partial file, so ${n === 1 ? 'it carries' : 'they carry'} on from here next time.`,
+      confirm: 'Pause & exit',
+      alt: 'Exit without pausing',
+      cancel: 'Keep downloading',
+    }
+  }
+  return {
+    title: 'Exit Downly?',
+    note: 'Nothing is downloading right now. Your finished files stay in the library.',
+    confirm: 'Exit',
+    alt: '',
+    cancel: 'Stay',
+  }
+})
+
+// Deep links land with no history behind them; in that case the queue is the way out.
+function goBack() {
+  if (window.history.state?.back) router.back()
+  else router.replace('/')
+}
+
+function closeExit() {
+  exitMode.value = ''
+}
+
+// One gesture, walked from the top of the stack down: overlays close, the router steps back to
+// the queue, and only the queue itself can leave the app — through a confirm, never on a stray tap.
+function handleBack() {
+  const action = nextBackAction({
+    locked: locked.value,
+    drawer: drawerOpen.value,
+    sheet: sharedLinks.value.length > 0,
+    exitSheet: !!exitMode.value,
+    section: route.meta.section,
+    path: route.path,
+    active: ongoing.value.length,
+  })
+  switch (action) {
+    case 'drawer': return closeDrawer()
+    case 'sheet': return sheetDismiss()
+    case 'exit-sheet':
+      return closeExit()
+    case 'history': return goBack()
+    case 'root': return router.replace('/')
+    case 'ask-pause': exitMode.value = 'pause'
+      return
+    case 'ask-exit': exitMode.value = 'plain'
+      return
+    default: return // 'lock': the lock screen swallows every press
+  }
+}
+
+// Close the app. Downloads left running carry on in the foreground service behind the
+// notification, which is why pausing first is the primary answer rather than the only one.
+async function leaveApp(paused = 0) {
+  exitMode.value = ''
+  downloads.persist() // the queue as the user just left it, debounce or not
+  try {
+    await CapApp.exitApp()
+  } catch {
+    // Browser preview: there is no process to finish, so report what happened instead.
+    const lead = paused ? `Paused ${paused} download${paused === 1 ? '' : 's'} · ` : ''
+    showToast(`${lead}close the tab to leave the preview`, 4000)
+  }
+}
+
+// The sheet's primary answer: stop the lane, then go.
+async function pauseAndExit() {
+  const n = await downloads.pauseAll()
+  await leaveApp(n)
+}
+
+function exitConfirmed() {
+  if (exitMode.value === 'pause') return pauseAndExit()
+  return leaveApp()
+}
+
+// The browser preview has no hardware back key, so Escape plays the same part there.
+function onKey(e) {
+  if (e.key === 'Escape') handleBack()
+}
+
 onMounted(async () => {
   downloads.init()
   checkLock(settings.appLock)
   intakeShared()
   try {
-    backHandle = await CapApp.addListener('backButton', () => {
-      if (locked.value) return // stay on the lock screen; relaunching locks again anyway
-      if (drawerOpen.value) { closeDrawer(); return } // back closes the menu first
-      if (sharedLinks.value.length) { sheetDismiss(); return } // then the share sheet
-      if (!route.meta.section) router.back()
-      else if (route.path !== '/') router.replace('/')
-      else CapApp.exitApp()
-    })
+    backHandle = await CapApp.addListener('backButton', handleBack)
     resumeHandle = await CapApp.addListener('resume', intakeShared)
   } catch { /* running in a browser */ }
+  if (!Capacitor.isNativePlatform()) document.addEventListener('keydown', onKey)
 })
 onBeforeUnmount(() => {
   backHandle?.remove()
   resumeHandle?.remove()
+  document.removeEventListener('keydown', onKey)
 })
 </script>
 
@@ -148,6 +243,10 @@ onBeforeUnmount(() => {
 
     <ShareSheet v-if="sharedLinks.length" :links="sharedLinks"
       @download="sheetDownload" @options="sheetOptions" @copy="sheetCopy" @dismiss="sheetDismiss" />
+
+    <ConfirmSheet v-if="exitAsk" :title="exitAsk.title" :note="exitAsk.note"
+      :confirm-label="exitAsk.confirm" :alt-label="exitAsk.alt" :cancel-label="exitAsk.cancel"
+      @confirm="exitConfirmed" @alt="leaveApp()" @dismiss="closeExit" />
 
     <div v-if="toast" class="toast" role="status">
       <span>{{ toast }}</span>
