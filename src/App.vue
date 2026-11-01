@@ -26,7 +26,7 @@ const settings = useSettingsStore().s
 const screen = ref(null)
 const unlocking = ref(false)
 const sharedLinks = ref([])
-// '' = the exit confirm is closed, 'plain' = "Exit Downly?", 'pause' = "Pause & exit?"
+// '' = the exit confirm is closed, 'plain' = "Exit Downswing?", 'pause' = "Pause & exit?"
 const exitMode = ref('')
 let backHandle
 let resumeHandle
@@ -124,7 +124,7 @@ const exitAsk = computed(() => {
     }
   }
   return {
-    title: 'Exit Downly?',
+    title: 'Exit Downswing?',
     note: 'Nothing is downloading right now. Your finished files stay in the library.',
     confirm: 'Exit',
     alt: '',
@@ -218,14 +218,14 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="shell">
-    <div v-if="locked" class="lock-screen" role="dialog" aria-modal="true" aria-label="Downly is locked">
+    <div v-if="locked" class="lock-screen" role="dialog" aria-modal="true" aria-label="Downswing is locked">
       <div class="lock-mark">
         <svg width="34" height="34" viewBox="0 0 108 108" fill="none" aria-hidden="true">
           <path d="M37.5,82.6 A33,33 0 1 1 70.5,82.6" stroke="currentColor" stroke-width="9" stroke-linecap="round" />
           <path d="M63,28 L39,57 L52,57 L46,82 L69,51 L57,51 Z" fill="#A8E6CF" stroke="#0E0E10" stroke-width="4" stroke-linejoin="round" />
         </svg>
       </div>
-      <h1 class="lock-title">Downly is locked</h1>
+      <h1 class="lock-title">Downswing is locked</h1>
       <p class="lock-sub">Confirm your fingerprint, face or screen lock to get in.</p>
       <p v-if="lockError" class="lock-err" role="alert">{{ lockError }}</p>
       <button class="btn primary" :disabled="unlocking" @click="onUnlock">{{ unlocking ? 'Checking…' : 'Unlock' }}</button>

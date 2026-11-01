@@ -23,7 +23,7 @@ const kindOf = (url) => {
 
 <template>
   <div class="sheet-scrim" aria-hidden="true" @click="emit('dismiss')" />
-  <div class="sheet" role="dialog" aria-modal="true" aria-label="Link shared to Downly">
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Link shared to Downswing">
     <div class="grab" />
 
     <div class="sheet-head">

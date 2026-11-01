@@ -22,7 +22,7 @@ import androidx.core.content.ContextCompat;
  * It stays up while any native job is running OR the app reports queued downloads.
  */
 public class DownloadService extends Service {
-    private static final String CHANNEL = "downly_downloads";
+    private static final String CHANNEL = "downswing_downloads";
     private static final int NOTIFICATION_ID = 4242;
 
     private static int nativeJobs = 0;
@@ -71,7 +71,7 @@ public class DownloadService extends Service {
 
         return new NotificationCompat.Builder(ctx, CHANNEL)
             .setSmallIcon(com.example.downloadmanager.R.drawable.ic_stat_bolt)
-            .setContentTitle("Downly")
+            .setContentTitle("Downswing")
             .setContentText(text)
             .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(tap)
@@ -109,7 +109,7 @@ public class DownloadService extends Service {
             getSystemService(NotificationManager.class).createNotificationChannel(channel);
         }
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "downly:downloads");
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "downswing:downloads");
         wakeLock.acquire(6 * 60 * 60 * 1000L); // matches Android's 6 hour limit for data sync services
     }
 

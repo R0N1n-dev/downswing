@@ -9,7 +9,7 @@ import android.content.Intent;
 import android.os.Build;
 import androidx.core.app.NotificationCompat;
 import com.example.downloadmanager.R;
-import com.example.downloadmanager.widget.DownlyWidgetProvider;
+import com.example.downloadmanager.widget.DownswingWidgetProvider;
 import com.yausername.youtubedl_android.YoutubeDL;
 import com.yausername.youtubedl_android.YoutubeDLRequest;
 import java.io.File;
@@ -77,7 +77,7 @@ public final class WidgetRunner {
         // Foreground service first, while our activity is on screen (or the widget tap counts):
         // the download must outlive the quick-add card closing.
         DownloadService.jobStarted(app);
-        DownlyWidgetProvider.updateAll(app);
+        DownswingWidgetProvider.updateAll(app);
 
         EXEC.execute(() -> run(app, id, url));
         return id;
@@ -127,7 +127,7 @@ public final class WidgetRunner {
                     lastPct[0] = pct;
                     lastWrite[0] = now;
                     WidgetJobs.progress(app, id, pct, speed, etaText, holder[0]);
-                    DownlyWidgetProvider.updateAll(app);
+                    DownswingWidgetProvider.updateAll(app);
                 }
                 return Unit.INSTANCE;
             });
@@ -152,7 +152,7 @@ public final class WidgetRunner {
             ACTIVE.remove(id);
             STOPPED.remove(id);
             DownloadService.jobEnded(app);
-            DownlyWidgetProvider.updateAll(app);
+            DownswingWidgetProvider.updateAll(app);
         }
     }
 
@@ -168,7 +168,7 @@ public final class WidgetRunner {
         } catch (Exception ignored) {
         }
         WidgetJobs.setStatus(context.getApplicationContext(), id, "paused");
-        DownlyWidgetProvider.updateAll(context.getApplicationContext());
+        DownswingWidgetProvider.updateAll(context.getApplicationContext());
     }
 
     /** Stop if running and drop the record: the app has taken ownership (or removed the row). */
@@ -176,7 +176,7 @@ public final class WidgetRunner {
         Context app = context.getApplicationContext();
         stop(app, id);
         WidgetJobs.remove(app, id);
-        DownlyWidgetProvider.updateAll(app);
+        DownswingWidgetProvider.updateAll(app);
     }
 
     private static String nameFrom(String url) {
@@ -210,7 +210,7 @@ public final class WidgetRunner {
         return msg != null ? msg : "Download failed";
     }
 
-    private static final String DONE_CHANNEL = "downly_done";
+    private static final String DONE_CHANNEL = "downswing_done";
 
     /** Completion/failure notice for downloads that ran without the app open. */
     private static void notifyUser(Context app, String title, String body) {

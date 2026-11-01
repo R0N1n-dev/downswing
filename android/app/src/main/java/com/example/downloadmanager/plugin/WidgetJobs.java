@@ -17,7 +17,7 @@ import org.json.JSONObject;
  */
 public final class WidgetJobs {
 
-    private static final String PREFS = "downly_widget_jobs";
+    private static final String PREFS = "downswing_widget_jobs";
     private static final String KEY = "jobs";
     private static final int MAX = 30;
 

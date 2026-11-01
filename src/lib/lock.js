@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { Downly } from '../services/downly'
+import { Downswing } from '../services/downswing'
 
 export const locked = ref(false)
 export const lockError = ref('')
@@ -8,7 +8,7 @@ export const lockError = ref('')
 export async function checkLock(enabled) {
   if (!enabled) return false
   try {
-    const { enrolled } = await Downly.canBiometric()
+    const { enrolled } = await Downswing.canBiometric()
     if (enrolled) {
       lockError.value = ''
       locked.value = true
@@ -21,7 +21,7 @@ export async function checkLock(enabled) {
 // Ask Android for fingerprint / face / screen lock. Never throws.
 export async function unlock() {
   try {
-    const res = await Downly.authenticate()
+    const res = await Downswing.authenticate()
     if (res.ok) {
       locked.value = false
       lockError.value = ''

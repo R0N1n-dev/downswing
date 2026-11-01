@@ -1,14 +1,15 @@
 <!doctype html>
-<html lang="en" class="booting" data-theme="dark" data-palette="default">
+<html lang="en" data-theme="dark" data-palette="default">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="dark light" />
-    <title>Downly</title>
+    <title>Downswing</title>
 
     <!-- Theme before the first frame. Waiting for main.js would flash the default dark ground
-         at light-theme users, and a colour flip right at launch reads as a glitch. -->
+         at light-theme users, and a colour flip right at launch reads as a glitch.
+         Reads the pre-rename storage key (see stores/settings.js) so existing installs keep theirs. -->
     <script>
       try {
         const saved = JSON.parse(localStorage.getItem('downly.settings') || '{}')

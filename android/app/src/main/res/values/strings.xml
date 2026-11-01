@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Downly</string>
-    <string name="title_activity_main">Downly</string>
+    <string name="app_name">Downswing</string>
+    <string name="title_activity_main">Downswing</string>
     <string name="package_name">com.example.downloadmanager</string>
     <string name="custom_url_scheme">com.example.downloadmanager</string>
 
@@ -17,8 +17,8 @@
     <string name="qa_no_link">No usable link was on the clipboard.</string>
     <string name="qa_need_link">Paste a link first</string>
     <string name="qa_started">Download started</string>
-    <string name="qa_failed">Could not start — open Downly instead</string>
+    <string name="qa_failed">Could not start — open Downswing instead</string>
     <string name="qa_cancel">Cancel</string>
     <string name="qa_start">Start download</string>
-    <string name="qa_open_app">Open Downly</string>
+    <string name="qa_open_app">Open Downswing</string>
 </resources>

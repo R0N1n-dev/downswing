@@ -1,7 +1,7 @@
 // Color themes. Dual: ~80% primary / 20% accent. Triple: 60% dominant / 30% structural / 10% accent.
 // Each palette maps onto the shared CSS variables; light/dark variants live in style.css.
 export const PALETTES = [
-  { id: 'default', name: 'Downly Blue', group: 'base', primary: '#1E2761', accent: '#3b74ff' },
+  { id: 'default', name: 'Downswing Blue', group: 'base', primary: '#1E2761', accent: '#3b74ff' },
 
   // Dual color themes
   { id: 'classic-corporate', name: 'Classic Corporate', group: 'dual', primary: '#1E2761', accent: '#408EC6', note: 'Fintech, SaaS, and crypto' },

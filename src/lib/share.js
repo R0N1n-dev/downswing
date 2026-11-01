@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { Downly } from '../services/downly'
+import { Downswing } from '../services/downswing'
 import { isMagnet } from './detect'
 
 // Links handed over by the Android share sheet, waiting for the Add screen. Consumed once.
@@ -19,7 +19,7 @@ export function extractLinks(text) {
 // Fetch whatever the share sheet delivered. Returns it (or '') so the caller can navigate.
 export async function pollShared() {
   try {
-    const { text } = await Downly.getSharedText()
+    const { text } = await Downswing.getSharedText()
     const links = extractLinks(text)
     if (!links.length) return ''
     pending.value = links.join(' ')

@@ -22,7 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Share Sheet: send a link from any browser or social app straight to Downly. -->
+            <!-- Share Sheet: send a link from any browser or social app straight to Downswing. -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -48,7 +48,7 @@
 
         <!-- Home-screen widget: live status + quick add. -->
         <receiver
-            android:name=".widget.DownlyWidgetProvider"
+            android:name=".widget.DownswingWidgetProvider"
             android:exported="true"
             android:label="@string/app_name">
             <intent-filter>
@@ -56,7 +56,7 @@
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/downly_widget_info" />
+                android:resource="@xml/downswing_widget_info" />
         </receiver>
 
         <!-- Translucent clipboard card opened from the widget. Not exported: only we launch it. -->
@@ -79,6 +79,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- Lets Downly write to shared folders such as Download on Android 11+. Granted by the user in Settings. -->
+    <!-- Lets Downswing write to shared folders such as Download on Android 11+. Granted by the user in Settings. -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 </manifest>

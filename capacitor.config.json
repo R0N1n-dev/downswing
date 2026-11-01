@@ -1,6 +1,6 @@
 {
   "appId": "com.example.downloadmanager",
-  "appName": "Download Manager",
+  "appName": "Downswing",
   "webDir": "dist",
   "androidStatusBar": {
     "style": "DARK",

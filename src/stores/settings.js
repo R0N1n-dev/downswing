@@ -4,6 +4,8 @@ import { StatusBar, Style as StatusBarStyle } from '@capacitor/status-bar'
 import { QUALITIES } from '../lib/options'
 import { PALETTE_IDS } from '../lib/themes'
 
+// Same pre-rename namespace as the queue (see stores/downloads.js): the Instagram cookie, folder
+// and theme survive the rename.
 const KEY = 'downly.settings'
 
 const defaults = () => ({

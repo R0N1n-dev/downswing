@@ -3,13 +3,13 @@ package com.example.downloadmanager;
 import android.content.Intent;
 import android.os.Bundle;
 import com.example.downloadmanager.plugin.Aria2Plugin;
-import com.example.downloadmanager.plugin.DownlyPlugin;
+import com.example.downloadmanager.plugin.DownswingPlugin;
 import com.example.downloadmanager.plugin.YtDlpPlugin;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
-    // A link shared to Downly from another app. Read once by DownlyPlugin.getSharedText.
+    // A link shared to Downswing from another app. Read once by DownswingPlugin.getSharedText.
     private static volatile String sharedText;
 
     private static String linkFrom(Intent intent) {
@@ -32,7 +32,7 @@ public class MainActivity extends BridgeActivity {
         // "YtDlp plugin is not implemented on android".
         registerPlugin(YtDlpPlugin.class);
         registerPlugin(Aria2Plugin.class);
-        registerPlugin(DownlyPlugin.class);
+        registerPlugin(DownswingPlugin.class);
         super.onCreate(savedInstanceState);
     }
 

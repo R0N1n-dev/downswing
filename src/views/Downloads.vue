@@ -11,7 +11,7 @@ import { SECTIONS } from '../lib/sections'
 import { KIND_LABEL } from '../lib/detect'
 import { formatBytes, parseSize, rangeText, finishedTodayBytes, fileKind, dayLabel } from '../lib/format'
 import { showToast } from '../lib/toast'
-import { Downly } from '../services/downly'
+import { Downswing } from '../services/downswing'
 import DownloadRow from '../components/DownloadRow.vue'
 
 const route = useRoute()
@@ -203,10 +203,10 @@ async function exportCsv() {
     ].map(q).join(','))
   }
   const csv = lines.join('\r\n')
-  const fname = `downly-history-${new Date().toISOString().slice(0, 10)}.csv`
+  const fname = `downswing-history-${new Date().toISOString().slice(0, 10)}.csv`
   try {
     const { uri } = await Filesystem.writeFile({ path: fname, data: csv, directory: Directory.Cache })
-    await Downly.shareFile({ path: decodeURIComponent(uri.replace(/^file:\/\//, '')), text: 'Downly download history' })
+    await Downswing.shareFile({ path: decodeURIComponent(uri.replace(/^file:\/\//, '')), text: 'Downswing download history' })
     showToast('Share sheet opened — pick where to save the CSV')
   } catch {
     try {

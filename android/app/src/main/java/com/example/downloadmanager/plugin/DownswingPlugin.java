@@ -22,7 +22,7 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import androidx.core.content.FileProvider;
 import android.media.MediaScannerConnection;
-import com.example.downloadmanager.widget.DownlyWidgetProvider;
+import com.example.downloadmanager.widget.DownswingWidgetProvider;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.HttpURLConnection;
@@ -33,8 +33,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /** App level helpers: background keep-alive, storage access, share intake, battery, lock, hashes. */
-@CapacitorPlugin(name = "Downly")
-public class DownlyPlugin extends Plugin {
+@CapacitorPlugin(name = "Downswing")
+public class DownswingPlugin extends Plugin {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private PluginCall authCall;
@@ -49,9 +49,9 @@ public class DownlyPlugin extends Plugin {
         // The same headline drives the notification: "2 active · 4.1 MB/s · 3 queued".
         DownloadService.setStatus(getContext(), label == null ? "" : label);
         if (label != null) {
-            getContext().getSharedPreferences(DownlyWidgetProvider.WEB_PREFS, android.content.Context.MODE_PRIVATE)
+            getContext().getSharedPreferences(DownswingWidgetProvider.WEB_PREFS, android.content.Context.MODE_PRIVATE)
                 .edit().putString("label", count > 0 ? label : "").apply();
-            DownlyWidgetProvider.updateAll(getContext());
+            DownswingWidgetProvider.updateAll(getContext());
         }
         call.resolve();
     }
@@ -148,7 +148,7 @@ public class DownlyPlugin extends Plugin {
                 ? (BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
                 : BiometricManager.Authenticators.BIOMETRIC_STRONG;
             BiometricPrompt.PromptInfo.Builder builder = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Unlock Downly")
+                .setTitle("Unlock Downswing")
                 .setSubtitle("Confirm it is you")
                 .setAllowedAuthenticators(authenticators);
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {

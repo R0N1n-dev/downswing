@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { HugeiconsIcon } from '@hugeicons/vue'
 import { ArrowLeft01Icon, Edit01Icon, CheckIcon, Copy01Icon, ShieldCheckIcon, FolderOpenIcon, Share01Icon, GaugeIcon } from '@hugeicons/core-free-icons'
 import { Clipboard } from '@capacitor/clipboard'
-import { Downly } from '../services/downly'
+import { Downswing } from '../services/downswing'
 import { showToast } from '../lib/toast'
 import { useDownloadsStore } from '../stores/downloads'
 import FileTile from '../components/FileTile.vue'
@@ -86,7 +86,7 @@ function pathOrToast() {
 async function openFile() {
   const path = pathOrToast()
   if (!path) return
-  try { await Downly.openFile({ path }) } catch (e) {
+  try { await Downswing.openFile({ path }) } catch (e) {
     showToast(/not implemented/i.test(e?.message || '') ? 'Opening files only works in the Android app.' : e?.message || 'No app can open this file.')
   }
 }
@@ -94,7 +94,7 @@ async function openFile() {
 async function shareFile() {
   const path = pathOrToast()
   if (!path) return
-  try { await Downly.shareFile({ path, text: item.value.url }) } catch (e) {
+  try { await Downswing.shareFile({ path, text: item.value.url }) } catch (e) {
     showToast(/not implemented/i.test(e?.message || '') ? 'Sharing files only works in the Android app.' : e?.message || 'Could not share that file.')
   }
 }
@@ -131,7 +131,7 @@ async function verifyHash() {
   hashing.value = true
   hashResult.value = null
   try {
-    const { hex } = await Downly.sha256({ path: item.value.filePath })
+    const { hex } = await Downswing.sha256({ path: item.value.filePath })
     const expected = hashInput.value.trim().toLowerCase().replace(/^sha-?256[:\s]*/i, '')
     hashResult.value = expected
       ? { hex, verdict: hex === expected ? 'match' : 'mismatch' }

@@ -27,7 +27,7 @@ watch(() => route.fullPath, closeDrawer)
           <path d="M59.7,35.5 L37.7,61.9 L57.5,61.9 L55.3,79.5 L77.3,53.1 L57.5,53.1 Z" fill="currentColor" opacity="0.35" />
           <path d="M56.2,32 L34.2,58.4 L54,58.4 L51.8,76 L73.8,49.6 L54,49.6 Z" fill="#A8E6CF" stroke="currentColor" stroke-width="5" stroke-linejoin="round" />
         </svg>
-        Downly
+        Downswing
       </span>
       <button class="icon-btn" aria-label="Close menu" @click="closeDrawer">
         <HugeiconsIcon :icon="Cancel01Icon" :size="20" :stroke-width="2.4" />

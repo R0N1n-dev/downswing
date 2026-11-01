@@ -19,10 +19,10 @@ import org.json.JSONObject;
  * and open the app. Rendered entirely from WidgetJobs + the native job count, so it works
  * even when the WebView has never loaded this session.
  */
-public class DownlyWidgetProvider extends AppWidgetProvider {
+public class DownswingWidgetProvider extends AppWidgetProvider {
 
     /** Headline pushed by the running app ("2 active · 4.1 MB/s"). */
-    public static final String WEB_PREFS = "downly_widget_web";
+    public static final String WEB_PREFS = "downswing_widget_web";
 
     @Override
     public void onUpdate(Context context, AppWidgetManager manager, int[] ids) {
@@ -33,7 +33,7 @@ public class DownlyWidgetProvider extends AppWidgetProvider {
     public static void updateAll(Context context) {
         Context app = context.getApplicationContext();
         AppWidgetManager manager = AppWidgetManager.getInstance(app);
-        ComponentName me = new ComponentName(app, DownlyWidgetProvider.class);
+        ComponentName me = new ComponentName(app, DownswingWidgetProvider.class);
         int[] ids = manager.getAppWidgetIds(me);
         if (ids.length == 0) return;
 
@@ -42,7 +42,7 @@ public class DownlyWidgetProvider extends AppWidgetProvider {
     }
 
     private static RemoteViews build(Context app) {
-        RemoteViews views = new RemoteViews(app.getPackageName(), R.layout.downly_widget);
+        RemoteViews views = new RemoteViews(app.getPackageName(), R.layout.downswing_widget);
 
         JSONObject job = WidgetJobs.topRunning(app);
         String title;
@@ -60,7 +60,7 @@ public class DownlyWidgetProvider extends AppWidgetProvider {
             status = sb.toString();
             pct = p;
         } else {
-            title = "Downly";
+            title = "Downswing";
             String web = app.getSharedPreferences(WEB_PREFS, Context.MODE_PRIVATE).getString("label", "");
             status = web.isEmpty() ? "Nothing downloading — paste a link, then tap +" : web;
         }
@@ -82,7 +82,7 @@ public class DownlyWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_add, quickTap);
 
         Intent open = new Intent(app, MainActivity.class);
-        open.setData(Uri.parse("downly://widget"));
+        open.setData(Uri.parse("downswing://widget"));
         PendingIntent openTap = PendingIntent.getActivity(app, 2, open,
             PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         views.setOnClickPendingIntent(R.id.widget_open, openTap);

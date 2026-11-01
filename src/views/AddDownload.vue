@@ -13,7 +13,7 @@ import { useSettingsStore } from '../stores/settings'
 import { QUALITIES, FOLDERS } from '../lib/options'
 import { showToast } from '../lib/toast'
 import { consumeShared } from '../lib/share'
-import { Downly } from '../services/downly'
+import { Downswing } from '../services/downswing'
 import Switch from '../components/Switch.vue'
 import FolderAccess from '../components/FolderAccess.vue'
 import { formatBytes } from '../lib/format'
@@ -99,7 +99,7 @@ watch(links, (list) => {
     if (links.value[0] !== target) return
     probing.value = true
     try {
-      const res = await Downly.probe({ url: target })
+      const res = await Downswing.probe({ url: target })
       if (links.value[0] === target) preview.value = { url: target, ...res }
     } catch {
       // No native side (browser preview) or the probe failed: the card simply stays hidden.
@@ -125,7 +125,7 @@ const previewWarn = computed(() => {
     return `The server answered ${preview.value.status} — the link may have expired.`
   }
   if (preview.value.isWebpage && kindChoice.value === 'file' && detectKind(preview.value.url) !== 'file') {
-    return 'This link opens a web page, not a file. Switch Type to Auto or Video and Downly will pull the media out of the page.'
+    return 'This link opens a web page, not a file. Switch Type to Auto or Video and Downswing will pull the media out of the page.'
   }
   return ''
 })
@@ -428,7 +428,7 @@ async function submit() {
     <p class="hint">Gets the best stream up to {{ quality }}p. If the video has nothing that low, it takes the closest match.</p>
   </section>
 
-  <p v-else-if="kind === 'video' && igHost" class="hint">Instagram serves one quality per post, reel or story — Downly grabs the best it offers, so there is nothing to pick.</p>
+  <p v-else-if="kind === 'video' && igHost" class="hint">Instagram serves one quality per post, reel or story — Downswing grabs the best it offers, so there is nothing to pick.</p>
 
   <section class="block">
     <label class="label" for="folder">Save to</label>

@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { HugeiconsIcon } from '@hugeicons/vue'
 import { Folder01Icon, ArrowLeft01Icon, CookieIcon, Wifi01Icon, BoltIcon } from '@hugeicons/core-free-icons'
 import { YtDlp } from '../services/ytdlp'
-import { Downly } from '../services/downly'
+import { Downswing } from '../services/downswing'
 import { useSettingsStore } from '../stores/settings'
 import { useDownloadsStore } from '../stores/downloads'
 import { formatBytes, parseSize } from '../lib/format'
@@ -28,7 +28,7 @@ onMounted(async () => {
     engine.value = 'Android app only'
   }
   try {
-    bio.value = await Downly.canBiometric()
+    bio.value = await Downswing.canBiometric()
   } catch {
     bio.value = { supported: false, enrolled: false }
   }
@@ -190,7 +190,7 @@ function reset() {
   <div class="group">
     <div class="setting"><span>Lock app with biometrics</span><Switch v-model="s.appLock" :disabled="!!bio && !bio.enrolled" label="Lock app with biometrics" /></div>
     <p v-if="bio && !bio.enrolled" class="hint pad">{{ bio.supported ? 'Set up a fingerprint or face unlock on this device first.' : 'This device has no fingerprint or face unlock.' }}</p>
-    <p v-else class="hint pad">Downly asks for your fingerprint, face or screen lock when it opens.</p>
+    <p v-else class="hint pad">Downswing asks for your fingerprint, face or screen lock when it opens.</p>
   </div>
 
   <h2 class="section-title">Engine</h2>
@@ -198,7 +198,7 @@ function reset() {
     <div class="setting"><span>yt-dlp version</span><span class="muted num eng">{{ engine }}</span></div>
     <div class="setting"><span>Update yt-dlp</span><button class="text-btn" :disabled="updating" @click="updateEngine">{{ updating ? 'Updating' : 'Update now' }}</button></div>
   </div>
-  <p class="hint">Sites change often and an old yt-dlp stops working. Downly also updates it on launch when you are online.</p>
+  <p class="hint">Sites change often and an old yt-dlp stops working. Downswing also updates it on launch when you are online.</p>
 
   <div class="actions"><button class="btn ghost" @click="reset">Reset settings</button></div>
 </template>

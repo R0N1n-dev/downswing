@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { Network } from '@capacitor/network'
 import { YtDlp } from '../services/ytdlp'
 import { Aria2 } from '../services/aria2'
-import { Downly } from '../services/downly'
+import { Downswing } from '../services/downswing'
 import { showToast } from '../lib/toast'
 import { notify } from '../services/notify'
 import { useSettingsStore } from './settings'
@@ -11,6 +11,8 @@ import { formatFor } from '../lib/options'
 import { formatBytes, formatEta, parseSize, basename, hostOf, friendlyError } from '../lib/format'
 import { sanitizeUrl, isInstagram } from '../lib/detect'
 
+// Deliberately still the pre-rename namespace: an install that already has a queue under
+// "downly.downloads" keeps it, and new writes land under the same key.
 const KEY = 'downly.downloads'
 const LIVE = ['downloading']
 let counter = 0
@@ -124,7 +126,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
     if (widgetPrimed && unchanged) return
     widgetPrimed = true
     lastWidgetLabel = label
-    Downly.setPending({ count, label }).catch(() => {})
+    Downswing.setPending({ count, label }).catch(() => {})
   }
 
   watch(
@@ -148,7 +150,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
 
   async function refreshCharging() {
     try {
-      const res = await Downly.isCharging()
+      const res = await Downswing.isCharging()
       charging.value = !!res.charging
     } catch {
       charging.value = true // browser preview: no battery info, never hold the queue
@@ -212,7 +214,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
     if (name) item.name = name
     item.filePath = path || item.filePath || ''
     // Publish to the media store so the file shows up in Gallery/Files right away.
-    if (item.filePath) Downly.scanFile({ path: item.filePath }).catch(() => {})
+    if (item.filePath) Downswing.scanFile({ path: item.filePath }).catch(() => {})
     // Widget jobs already posted a native completion notice.
     if (settings.notifyComplete && !nativeNotice) {
       const facts = [item.totalText, item.audioOnly ? 'audio' : `up to ${item.quality}p`].filter(Boolean).join(' · ')
@@ -255,7 +257,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
   let widgetPoll
 
   async function fetchWidgetJobs() {
-    const { jobs } = await Downly.listWidgetJobs()
+    const { jobs } = await Downswing.listWidgetJobs()
     return JSON.parse(jobs || '[]')
   }
 
@@ -310,7 +312,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
       })
       // Terminal records were already announced natively; ingest and drop them so a cleared
       // history row cannot resurrect on the next launch.
-      if (status === 'completed' || status === 'error') Downly.removeWidgetJob({ id: j.id }).catch(() => {})
+      if (status === 'completed' || status === 'error') Downswing.removeWidgetJob({ id: j.id }).catch(() => {})
     }
     scheduleWidgetPoll()
   }
@@ -335,11 +337,11 @@ export const useDownloadsStore = defineStore('downloads', () => {
         if (j.name) item.name = j.name
       } else if (j.status === 'completed' && item.status !== 'completed') {
         complete(item, j.path || item.filePath, j.name, true)
-        Downly.removeWidgetJob({ id: item.wid }).catch(() => {})
+        Downswing.removeWidgetJob({ id: item.wid }).catch(() => {})
         item.wid = null
       } else if (j.status === 'error' && item.status !== 'error') {
         fail(item, j.error || 'Download failed', true)
-        Downly.removeWidgetJob({ id: item.wid }).catch(() => {})
+        Downswing.removeWidgetJob({ id: item.wid }).catch(() => {})
         item.wid = null
       } else if (j.status === 'paused' && item.status === 'downloading') {
         item.status = 'paused'
@@ -408,7 +410,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
     if (item.wid) {
       const wid = item.wid
       item.wid = null
-      Downly.removeWidgetJob({ id: wid }).catch(() => {})
+      Downswing.removeWidgetJob({ id: wid }).catch(() => {})
     }
     item.status = 'downloading'
     item.error = ''
@@ -522,7 +524,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
     item.speed = ''
     item.eta = ''
     // Widget-started downloads run in the native runner, not the engine plugins.
-    if (wid && !jobId) await Downly.stopWidgetJob({ id: wid }).catch(() => {})
+    if (wid && !jobId) await Downswing.stopWidgetJob({ id: wid }).catch(() => {})
     else if (jobId) await engineOf(item).cancel({ id: jobId }).catch(() => {})
   }
 
@@ -573,7 +575,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
     const item = byId(id)
     if (!item) return
     clearRetry(id)
-    if (item.wid) Downly.removeWidgetJob({ id: item.wid }).catch(() => {})
+    if (item.wid) Downswing.removeWidgetJob({ id: item.wid }).catch(() => {})
     item.status = 'paused'
     await stopJob(item)
     items.value = items.value.filter((i) => i.id !== id)
@@ -583,7 +585,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
   function remove(id) {
     const item = byId(id)
     clearRetry(id)
-    if (item?.wid) Downly.removeWidgetJob({ id: item.wid }).catch(() => {})
+    if (item?.wid) Downswing.removeWidgetJob({ id: item.wid }).catch(() => {})
     items.value = items.value.filter((i) => i.id !== id)
   }
 
