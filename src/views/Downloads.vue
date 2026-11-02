@@ -10,6 +10,7 @@ import { useDownloadsStore } from '../stores/downloads'
 import { SECTIONS } from '../lib/sections'
 import { KIND_LABEL } from '../lib/detect'
 import { formatBytes, parseSize, rangeText, finishedTodayBytes, fileKind, dayLabel } from '../lib/format'
+import { targetPath, prettyPath } from '../lib/categories'
 import { showToast } from '../lib/toast'
 import { Downswing } from '../services/downswing'
 import DownloadRow from '../components/DownloadRow.vue'
@@ -23,6 +24,11 @@ const section = computed(() => SECTIONS.find((s) => s.id === route.meta.section)
 const searching = ref(false)
 const query = ref('')
 const typeFilter = ref('')
+
+// The rows that were on screen when this view mounted. Only later arrivals animate in: sliding
+// a queue that was already there is the "shake" the app used to open with.
+const atOpen = new Set(items.value.map((i) => i.id))
+const isNew = (i) => !atOpen.has(i.id)
 
 // Multi-select on the finished lists: pick rows, delete in one go, undo from the snackbar.
 const selecting = ref(false)
@@ -195,7 +201,7 @@ async function exportCsv() {
   for (const i of items.value) {
     lines.push([
       i.name, i.url, KIND_LABEL[i.kind] || 'Video', CSV_STATUS[i.status] || i.status, i.totalText || '',
-      i.folder || 'App folder', i.filePath || '',
+      prettyPath(targetPath(i.folder, i.subDir)), i.filePath || '',
       i.createdAt ? new Date(i.createdAt).toISOString() : '',
       i.startedAt ? new Date(i.startedAt).toISOString() : '',
       i.finishedAt ? new Date(i.finishedAt).toISOString() : '',
@@ -315,6 +321,7 @@ async function exportCsv() {
         <div class="list">
           <DownloadRow
             v-for="i in g.items" :key="i.id" :item="i" :selectable="selecting" :selected="picked.has(i.id)"
+            :enter="isNew(i)"
             @open="onRow(i)" @primary="primary(i)" @cancel="cancelRow(i)" @toggle="togglePick(i)"
           />
         </div>
@@ -323,7 +330,7 @@ async function exportCsv() {
     <div v-else-if="rows.length" class="list">
       <DownloadRow
         v-for="i in rows" :key="i.id" :item="i" :reorder="section.id === 'queued'"
-        :selectable="selecting" :selected="picked.has(i.id)"
+        :selectable="selecting" :selected="picked.has(i.id)" :enter="isNew(i)"
         @open="onRow(i)" @primary="primary(i)" @cancel="cancelRow(i)" @toggle="togglePick(i)"
         @up="store.move(i.id, -1)" @down="store.move(i.id, 1)"
       />

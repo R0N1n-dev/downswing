@@ -88,7 +88,7 @@ public final class WidgetRunner {
         String name = null;
         try {
             Engines.ensure(app);
-            File dir = Engines.resolveOutputDir(app, "/storage/emulated/0/Download");
+            File dir = Engines.resolveOutputDir(app, "/storage/emulated/0/Download", "Downswing");
 
             YoutubeDLRequest request = new YoutubeDLRequest(url.trim());
             request.addOption("-o", dir.getAbsolutePath() + "/%(title).150B.%(ext)s");

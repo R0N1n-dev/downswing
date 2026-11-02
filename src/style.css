@@ -95,6 +95,11 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body, #app { height: 100%; margin: 0; }
+/* The window itself never scrolls: the app owns a fixed frame and only .screen scrolls inside
+   it. Without this, a late viewport/inset measurement or a long list lets the whole page shift
+   by a few pixels, which is what made the app look like it shook on open. */
+html, body { overflow: hidden; }
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -115,11 +120,15 @@ button:disabled { cursor: default; opacity: 0.6; }
 .blue { color: var(--blue); }
 .small { font-size: 12.5px; }
 
-/* shell — flat paper ground with a fine dot grid, cards are pastel stickers on it */
-.shell { display: flex; flex-direction: row; height: 100dvh; max-width: 560px; margin: 0 auto;
-  position: relative; background: var(--bg); }
+/* shell — flat paper ground with a fine dot grid, cards are pastel stickers on it.
+   Pinned to the layout viewport instead of `100dvh`: dvh is re-measured when Android resolves
+   its insets and status bar, and the resize used to land after the first frame — a jump of a
+   few pixels that read as the screen shaking. `inset: 0` never re-measures. */
+.shell { display: flex; flex-direction: row; position: fixed; inset: 0; max-width: 560px;
+  margin: 0 auto; background: var(--bg); }
 .stage { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.screen { position: relative; z-index: 1; flex: 1; overflow-y: auto; padding: 0 16px 28px;
+.screen { position: relative; z-index: 1; flex: 1; overflow-y: auto; overflow-x: hidden;
+  overscroll-behavior: contain; padding: 0 16px 28px;
   scrollbar-width: none;
   background-image: radial-gradient(circle, var(--dot) 1px, transparent 1.2px);
   background-size: 11px 11px; }
@@ -127,7 +136,8 @@ button:disabled { cursor: default; opacity: 0.6; }
 .screen.with-dock { padding-bottom: calc(var(--sab) + 96px); }
 
 /* The screen renders in place — no entrance slide, so nothing jitters when the app opens.
-   Rows still stagger in individually where the list actually changes. */
+   Rows only animate when they arrive later (`.enter`, set by the view); the rows that were
+   already in the queue at launch are painted, not slid. */
 
 .toast { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--sab) + 78px);
   display: flex; align-items: center; gap: 14px; background: var(--ink); color: var(--paper);
@@ -242,14 +252,9 @@ button:disabled { cursor: default; opacity: 0.6; }
 /* list rows */
 .row { display: grid; grid-template-columns: 38px 1fr auto; gap: 12px; align-items: center;
   padding: 12px 14px; border-top: 2px solid var(--line); cursor: pointer;
-  transition: background var(--t); animation: row-in var(--t) ease both; }
-.row:nth-child(2) { animation-delay: 0.02s; }
-.row:nth-child(3) { animation-delay: 0.04s; }
-.row:nth-child(4) { animation-delay: 0.06s; }
-.row:nth-child(5) { animation-delay: 0.08s; }
-.row:nth-child(6) { animation-delay: 0.1s; }
-.row:nth-child(7) { animation-delay: 0.12s; }
-.row:nth-child(8) { animation-delay: 0.14s; }
+  transition: background var(--t); }
+/* Only rows that arrive after the list is on screen animate in; see .enter in views/Downloads.vue. */
+.row.enter { animation: row-in var(--t) ease both; }
 @keyframes row-in { from { opacity: 0; transform: translateY(6px); } }
 .row:first-child { border-top: 0; }
 .row:active { background: color-mix(in srgb, var(--accent) 16%, transparent); }
@@ -315,7 +320,7 @@ button:disabled { cursor: default; opacity: 0.6; }
 
 .empty { display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center;
   padding: 48px 24px; color: var(--muted); border: 3px dashed var(--edge); border-radius: var(--r-card);
-  background: var(--surf); box-shadow: var(--sh-sm); animation: row-in var(--t) ease both; }
+  background: var(--surf); box-shadow: var(--sh-sm); }
 .empty-mark { width: 68px; height: 68px; border-radius: 20px; display: grid; place-items: center;
   margin-bottom: 10px; color: var(--ink); background: var(--butter); border: 3px solid var(--edge);
   box-shadow: var(--sh-sm); }
@@ -380,6 +385,13 @@ select optgroup { background: var(--paper); color: var(--muted); font-weight: 70
 .swatch { width: 24px; height: 24px; border-radius: 8px; border: 2.5px solid var(--edge); flex: none;
   box-shadow: var(--sh-xs); }
 .swatch-note { font-size: 12.5px; margin-left: 4px; }
+
+/* the folder tree a download can land in, listed under the folder setting */
+.folders { display: flex; flex-direction: column; gap: 5px; padding: 2px 16px 14px; }
+.folder-line { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.folder-path { font-size: 12px; font-weight: 600; overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums; }
+
 
 /* settings — theme segmented control, palette sticker grid, plain text input */
 .setting .seg { width: 196px; flex: none; }

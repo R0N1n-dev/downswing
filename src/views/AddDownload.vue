@@ -11,6 +11,7 @@ import { ensureNotifyPermission } from '../services/notify'
 import { useDownloadsStore } from '../stores/downloads'
 import { useSettingsStore } from '../stores/settings'
 import { QUALITIES, FOLDERS } from '../lib/options'
+import { subFolderFor, targetPath, prettyPath, CATEGORY_ROOT } from '../lib/categories'
 import { showToast } from '../lib/toast'
 import { consumeShared } from '../lib/share'
 import { Downswing } from '../services/downswing'
@@ -165,6 +166,17 @@ const results = ref([])
 const picked = ref(new Set())
 
 const canAdd = computed(() => (mode.value === 'link' ? !!torrentFile.value || url.value.trim().length > 0 : picked.value.size > 0))
+
+// Where this download will actually land. The engines append the category folder
+// (Downswing/Video, Downswing/Audio…), so show the finished path, not just the root.
+const ROOT_FOLDER = CATEGORY_ROOT
+const organised = computed(() => settings.categoryFolders !== false)
+const saveTarget = computed(() => {
+  const single = links.value.length === 1 ? links.value[0] : ''
+  const name = preview.value?.filename || guessName(single || url.value, kind.value || 'video')
+  const subDir = subFolderFor({ name, kind: kind.value || 'video', audioOnly: audioOnly.value, organise: organised.value })
+  return prettyPath(targetPath(folder.value, subDir))
+})
 
 async function paste() {
   try {
@@ -438,6 +450,9 @@ async function submit() {
         <option v-for="f in FOLDERS" :key="f.value" :value="f.value">{{ f.label }}</option>
       </select>
     </div>
+    <p class="hint">Files land in <b>{{ saveTarget }}</b>{{ organised
+      ? `. Category folders keep video, audio, pictures and documents apart inside ${ROOT_FOLDER}.`
+      : '.' }}</p>
   </section>
 
   <FolderAccess :folder="folder" />

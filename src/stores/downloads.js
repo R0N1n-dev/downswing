@@ -10,12 +10,15 @@ import { useSettingsStore } from './settings'
 import { formatFor } from '../lib/options'
 import { formatBytes, formatEta, parseSize, basename, hostOf, friendlyError } from '../lib/format'
 import { sanitizeUrl, isInstagram } from '../lib/detect'
+import { subFolderFor, targetPath } from '../lib/categories'
 
 // Deliberately still the pre-rename namespace: an install that already has a queue under
 // "downly.downloads" keeps it, and new writes land under the same key.
 const KEY = 'downly.downloads'
 const LIVE = ['downloading']
 let counter = 0
+// One folder warning per session: a batch of links should not repeat the same snackbar.
+let warnedFolder = false
 
 // Auto-retry: only for transient trouble (drops, timeouts, 5xx, rate limits) — never for
 // dead links or blocked media, where a retry would just burn time. Three attempts, growing wait.
@@ -46,7 +49,7 @@ function load() {
   try {
     const list = JSON.parse(localStorage.getItem(KEY) || '[]')
     // A download that was running when the app died is resumable, not running.
-    return list.map((i) => ({ kind: 'video', peers: '', retries: 0, limitKb: null, ...i,
+    return list.map((i) => ({ kind: 'video', peers: '', retries: 0, limitKb: null, subDir: '', ...i,
       // A download or a pending retry that was running when the app died is resumable, not running.
       ...(LIVE.includes(i.status) || i.status === 'retrying' ? { status: 'paused', speed: '', eta: '' } : {}) }))
   } catch {
@@ -226,6 +229,15 @@ export const useDownloadsStore = defineStore('downloads', () => {
   async function init() {
     if (listening) return
     listening = true
+    // Records from before category folders have no subDir. Give the ones that have not started
+    // one, so resuming an old queue files the file where the new layout expects it.
+    for (const i of items.value) {
+      if (!i.subDir && i.status !== 'completed') {
+        i.subDir = subFolderFor({
+          name: i.name, kind: i.kind, audioOnly: i.audioOnly, organise: settings.categoryFolders !== false,
+        })
+      }
+    }
     try {
       await YtDlp.addListener('downloadProgress', onProgress)
       await YtDlp.addListener('downloadComplete', (e) => {
@@ -295,6 +307,9 @@ export const useDownloadsStore = defineStore('downloads', () => {
         quality: settings.quality,
         audioOnly: false,
         folder: '/storage/emulated/0/Download',
+        // The widget runner files its work under Downswing without a category (it cannot know
+        // the type before the download starts) — see WidgetRunner.run in android/.
+        subDir: 'Downswing',
         saveTo: '',
         filePath: j.path || '',
         status,
@@ -434,6 +449,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
         ? await YtDlp.start({
             url: item.url,
             outputDir: item.folder,
+            subDir: item.subDir || '',
             format: formatFor(item.quality, item.audioOnly),
             convertAudio: item.audioOnly,
             audioFormat: 'mp3',
@@ -443,6 +459,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
         : await Aria2.start({
             source: item.url,
             outputDir: item.folder,
+            subDir: item.subDir || '',
             rateLimitKb,
             selectFile: item.selectFile || '',
           })
@@ -453,8 +470,12 @@ export const useDownloadsStore = defineStore('downloads', () => {
       }
       item.jobId = res.id
       item.saveTo = res.outputDir
-      if (item.folder && res.outputDir !== item.folder) {
-        showToast('That folder is not writable, so this went to the app folder.', 4200)
+      // A shared folder the user has not granted access to falls back to the app folder; say so
+      // once per session instead of letting the file vanish into Android/data.
+      const wanted = item.folder ? targetPath(item.folder, item.subDir) : ''
+      if (wanted && res.outputDir !== wanted && !warnedFolder) {
+        warnedFolder = true
+        showToast('That folder is not writable yet, so this went to the app folder. Allow access in Settings.', 4600)
       }
     } catch (err) {
       fail(item, err?.message || String(err))
@@ -484,8 +505,15 @@ export const useDownloadsStore = defineStore('downloads', () => {
     const url = sanitizeUrl(rawUrl)
     const dup = items.value.find((i) => i.url === url && ['queued', 'downloading', 'paused', 'retrying'].includes(i.status))
     if (dup) throw new Error('That link is already in your list.')
-    // Rule: with the default folder, audio-only downloads land in Music.
-    const dest = audioOnly && settings.smartAudioFolder && !folder ? '/storage/emulated/0/Music' : folder
+    const label = name || hostOf(url)
+    // Category folders: the root is only the top of the tree, the engine adds
+    // Downswing/<Category> under it (see lib/categories.js), so a video lands in
+    // Downloads/Downswing/Video and an album track in Downloads/Downswing/Audio.
+    const organise = settings.categoryFolders !== false
+    // Legacy shortcut, still honoured when category folders are off: audio-only goes to Music.
+    const toMusic = !organise && audioOnly && settings.smartAudioFolder && !folder
+    const root = toMusic ? '/storage/emulated/0/Music' : folder
+    const subDir = toMusic ? '' : subFolderFor({ name: label, kind, audioOnly, organise })
     const item = {
       id: `d${Date.now().toString(36)}${counter++}`,
       jobId: null,
@@ -493,10 +521,11 @@ export const useDownloadsStore = defineStore('downloads', () => {
       selectFile,
       peers: '',
       url,
-      name: name || hostOf(url),
+      name: label,
       quality,
       audioOnly,
-      folder: dest,
+      folder: root,
+      subDir,
       saveTo: '',
       filePath: '',
       status: startNow ? 'queued' : 'paused',

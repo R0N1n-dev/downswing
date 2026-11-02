@@ -1,6 +1,5 @@
 package com.example.downloadmanager.plugin;
 
-import android.os.Environment;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -74,20 +73,10 @@ public class YtDlpPlugin extends Plugin {
         return v == null ? "" : v;
     }
 
-    private File resolveOutputDir(String requested) {
-        if (requested != null && !requested.isEmpty()) {
-            File d = new File(requested);
-            if ((d.isDirectory() || d.mkdirs()) && d.canWrite()) {
-                return d;
-            }
-        }
-        // App-specific external storage: always writable, no permission needed.
-        File d = getContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
-        if (d == null) {
-            d = new File(getContext().getFilesDir(), "downloads");
-        }
-        d.mkdirs();
-        return d;
+    private File resolveOutputDir(String requested, String subDir) {
+        // One implementation for both engines, so yt-dlp and aria2 always agree on the tree:
+        // <root>/Downswing/<Category> (see Engines and src/lib/categories.js).
+        return Engines.resolveOutputDir(getContext(), requested, subDir);
     }
 
     @PluginMethod
@@ -104,7 +93,7 @@ public class YtDlpPlugin extends Plugin {
         // Optional browser cookie for sites that only serve the media to a logged-in session
         // (Instagram posts, private videos). Sent as a raw Cookie header, e.g. "sessionid=…; …".
         String cookieHeader = call.getString("cookieHeader", null);
-        File dir = resolveOutputDir(call.getString("outputDir", null));
+        File dir = resolveOutputDir(call.getString("outputDir", null), call.getString("subDir", null));
 
         String id = UUID.randomUUID().toString();
         activeJobs.put(id, Boolean.TRUE);

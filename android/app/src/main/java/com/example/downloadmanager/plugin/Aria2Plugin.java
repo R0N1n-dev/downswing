@@ -84,7 +84,7 @@ public class Aria2Plugin extends Plugin {
         final String src = source.trim();
         final int rateLimitKb = call.getInt("rateLimitKb", 0);
         final String selectFile = call.getString("selectFile", "");
-        final File dir = Engines.resolveOutputDir(getContext(), call.getString("outputDir", null));
+        final File dir = Engines.resolveOutputDir(getContext(), call.getString("outputDir", null), call.getString("subDir", null));
         final String id = UUID.randomUUID().toString();
         stopped.remove(id);
 
