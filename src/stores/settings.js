@@ -37,6 +37,8 @@ function load() {
     if (saved.categoryFolders === undefined) {
       merged.categoryFolders = true
       if (!saved.folder) merged.folder = DEFAULT_FOLDER
+      // Write it back now: the change should survive this session even if nothing else is edited.
+      try { localStorage.setItem(KEY, JSON.stringify(merged)) } catch { /* storage full */ }
     }
     if (!QUALITIES.includes(merged.quality)) merged.quality = 720
     if (!PALETTE_IDS.includes(merged.palette)) merged.palette = 'default'

@@ -215,6 +215,15 @@ export const useDownloadsStore = defineStore('downloads', () => {
   async function init() {
     if (listening) return
     listening = true
+    // Records from before category folders have no subDir. Give the ones that have not started
+    // one, so resuming an old queue files the file where the new layout expects it.
+    for (const i of items.value) {
+      if (!i.subDir && i.status !== 'completed') {
+        i.subDir = subFolderFor({
+          name: i.name, kind: i.kind, audioOnly: i.audioOnly, organise: settings.categoryFolders !== false,
+        })
+      }
+    }
     try {
       await YtDlp.addListener('downloadProgress', onProgress)
       await YtDlp.addListener('downloadComplete', (e) => {
