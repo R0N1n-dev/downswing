@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { HugeiconsIcon } from '@hugeicons/vue'
 import { Folder01Icon, ArrowLeft01Icon, CookieIcon, Wifi01Icon, BoltIcon, FolderTreeIcon } from '@hugeicons/core-free-icons'
+import { Clipboard } from '@capacitor/clipboard'
 import { YtDlp } from '../services/ytdlp'
 import { Downswing } from '../services/downswing'
 import { useSettingsStore } from '../stores/settings'
@@ -10,6 +11,7 @@ import { useDownloadsStore } from '../stores/downloads'
 import { formatBytes, parseSize } from '../lib/format'
 import { QUALITIES, FOLDERS } from '../lib/options'
 import { CATEGORIES, CATEGORY_ROOT, prettyPath } from '../lib/categories'
+import { launchReport, launchSummary } from '../lib/launch'
 import { PALETTES } from '../lib/themes'
 import { showToast } from '../lib/toast'
 import Switch from '../components/Switch.vue'
@@ -83,6 +85,26 @@ function clearCookie() {
 }
 
 const speed = (kb) => (kb === 0 ? 'No limit' : kb >= 1024 ? `${(kb / 1024).toFixed(kb % 1024 ? 1 : 0)} MB/s` : `${kb} KB/s`)
+
+// The last launch's self-check: "Stable", or exactly what moved and when.
+const launchText = computed(() => launchSummary(launchReport.value))
+async function copyLaunch() {
+  const r = launchReport.value
+  if (!r) return
+  const text = [
+    `Downswing launch check — ${new Date(r.checkedAt).toISOString()}`,
+    launchSummary(r),
+    `baseline: ${JSON.stringify(r.first)}`,
+    ...r.shifts.map((s) => `shift: ${s.field} ${s.from} -> ${s.to} at ${s.at}ms`),
+    `ua: ${navigator.userAgent}`,
+  ].join('\n')
+  try {
+    await Clipboard.write({ string: text })
+    showToast('Launch report copied')
+  } catch {
+    showToast('Could not copy the report')
+  }
+}
 
 // Where this install actually files its downloads, shown as the paths a file manager will show.
 const ROOT = CATEGORY_ROOT
@@ -217,6 +239,16 @@ function reset() {
   <div class="group">
     <div class="setting"><span>yt-dlp version</span><span class="muted num eng">{{ engine }}</span></div>
     <div class="setting"><span>Update yt-dlp</span><button class="text-btn" :disabled="updating" @click="updateEngine">{{ updating ? 'Updating' : 'Update now' }}</button></div>
+    <!-- What the last launch actually did: if the window ever shifts again, this says what moved
+         and when, straight off the phone. -->
+    <div class="setting stack">
+      <span class="s-label">Launch check</span>
+      <span class="muted small">{{ launchText }}</span>
+    </div>
+    <div v-if="launchReport" class="setting">
+      <span class="muted small">Report</span>
+      <button class="text-btn" @click="copyLaunch">Copy</button>
+    </div>
   </div>
   <p class="hint">Sites change often and an old yt-dlp stops working. Downswing also updates it on launch when you are online.</p>
 

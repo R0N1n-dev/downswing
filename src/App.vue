@@ -18,6 +18,7 @@ import { drawerOpen, closeDrawer } from './lib/drawer'
 import { detectKind, guessName } from './lib/detect'
 import { ensureNotifyPermission } from './services/notify'
 import { locked, lockError, checkLock, unlock } from './lib/lock'
+import { watchLaunch } from './lib/launch'
 
 const route = useRoute()
 const router = useRouter()
@@ -203,6 +204,8 @@ onMounted(async () => {
   downloads.init()
   checkLock(settings.appLock)
   intakeShared()
+  // Records whether the first frames moved, for Settings → Engine.
+  watchLaunch()
   try {
     backHandle = await CapApp.addListener('backButton', handleBack)
     resumeHandle = await CapApp.addListener('resume', intakeShared)

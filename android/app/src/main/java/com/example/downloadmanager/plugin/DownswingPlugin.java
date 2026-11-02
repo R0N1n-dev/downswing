@@ -39,6 +39,38 @@ public class DownswingPlugin extends Plugin {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private PluginCall authCall;
 
+    /** Shared with MainActivity: the colour of the Android window behind the WebView. */
+    public static final String PREFS = "downswing";
+    public static final String PREF_WINDOW_BG = "windowBg";
+
+    /**
+     * The window behind the WebView is what shows in the strip the native inset handling reserves
+     * for the status bar, so it has to follow the app's own ground — otherwise light theme shows a
+     * dark band above the app. Called on every theme change and remembered for the next launch.
+     */
+    @PluginMethod
+    public void setWindowBackground(PluginCall call) {
+        String color = call.getString("color", null);
+        if (color == null || color.trim().isEmpty()) {
+            call.reject("A colour is required", "NO_COLOR");
+            return;
+        }
+        final int parsed;
+        try {
+            parsed = android.graphics.Color.parseColor(color.trim());
+        } catch (IllegalArgumentException e) {
+            call.reject("That is not a #RRGGBB colour", "BAD_COLOR");
+            return;
+        }
+        getContext().getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .edit().putInt(PREF_WINDOW_BG, parsed).apply();
+        final Activity activity = getActivity();
+        if (activity != null) {
+            activity.runOnUiThread(() -> activity.getWindow().getDecorView().setBackgroundColor(parsed));
+        }
+        call.resolve();
+    }
+
     /** The app tells us how many downloads are queued or running so the service outlives the UI.
      *  The optional label is the widget's headline ("2 active · 4.1 MB/s"). */
     @PluginMethod

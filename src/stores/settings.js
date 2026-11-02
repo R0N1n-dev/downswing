@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, watch } from 'vue'
 import { StatusBar, Style as StatusBarStyle } from '@capacitor/status-bar'
+import { Downswing } from '../services/downswing'
 import { QUALITIES, DEFAULT_FOLDER } from '../lib/options'
 import { PALETTE_IDS } from '../lib/themes'
 
@@ -55,18 +56,29 @@ export const useSettingsStore = defineStore('settings', () => {
   const s = reactive(load())
   const media = window.matchMedia?.('(prefers-color-scheme: dark)')
 
-  // The native status bar must follow the app theme, otherwise the icons stay dark on a dark app.
-  function applyStatusBar(dark) {
-    try {
-      StatusBar.setStyle({ style: dark ? StatusBarStyle.Dark : StatusBarStyle.Light }).catch(() => {})
-      // --bg can be a color-mix() expression, so read the resolved color off the body instead.
-      const resolved = getComputedStyle(document.body).backgroundColor
-      const m = /rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/.exec(resolved)
-      if (m) {
-        const hex = `#${m.slice(1, 4).map((n) => (+n).toString(16).padStart(2, '0')).join('')}`
-        StatusBar.setBackgroundColor({ color: hex }).catch(() => {})
-      }
-    } catch { /* browser preview */ }
+  // Native chrome follows the theme, but only when it actually changes: the status bar icons and
+  // the colour of the Android window behind the WebView (the strip native inset handling reserves
+  // for the status bar, see capacitor.config.json → SystemBars.insetsHandling).
+  //
+  // Deliberately nothing here touches layout. Re-applying window chrome on every boot, or resizing
+  // anything from the native inset values, is what used to make the whole screen move a few frames
+  // into launch. setBackgroundColor is gone too: it has no effect on Android 15+, where the window
+  // colour is what the strip shows.
+  let barStyle = null
+  let windowColor = null
+  function applyChrome(dark) {
+    const style = dark ? StatusBarStyle.Dark : StatusBarStyle.Light
+    if (style !== barStyle) {
+      barStyle = style
+      try { StatusBar.setStyle({ style }).catch(() => {}) } catch { /* browser preview */ }
+    }
+    // --bg can be a color-mix() expression, so read the resolved colour off the body instead.
+    const m = /rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/.exec(getComputedStyle(document.body).backgroundColor)
+    if (!m) return
+    const hex = `#${m.slice(1, 4).map((n) => (+n).toString(16).padStart(2, '0')).join('')}`
+    if (hex === windowColor) return
+    windowColor = hex
+    try { Downswing.setWindowBackground({ color: hex }).catch(() => {}) } catch { /* browser preview */ }
   }
 
   function applyTheme() {
@@ -74,7 +86,7 @@ export const useSettingsStore = defineStore('settings', () => {
     const root = document.documentElement
     root.setAttribute('data-theme', dark ? 'dark' : 'light')
     root.setAttribute('data-palette', s.palette)
-    applyStatusBar(dark)
+    applyChrome(dark)
   }
 
   watch(s, () => {

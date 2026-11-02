@@ -2,9 +2,13 @@
   "appId": "com.example.downloadmanager",
   "appName": "Downswing",
   "webDir": "dist",
-  "androidStatusBar": {
-    "style": "DARK",
-    "backgroundColor": "#131315",
-    "overlayWebView": false
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "native",
+      "initialViewportFitValueHint": "cover"
+    },
+    "StatusBar": {
+      "style": "DARK"
+    }
   }
 }

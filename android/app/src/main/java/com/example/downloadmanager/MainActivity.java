@@ -34,6 +34,11 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(Aria2Plugin.class);
         registerPlugin(DownswingPlugin.class);
         super.onCreate(savedInstanceState);
+        // Paint the window with the theme the app was last using. Native inset handling leaves a
+        // strip above the WebView showing this colour, so a stale one is a visible band at launch.
+        int bg = getSharedPreferences(DownswingPlugin.PREFS, MODE_PRIVATE)
+            .getInt(DownswingPlugin.PREF_WINDOW_BG, 0);
+        if (bg != 0) getWindow().getDecorView().setBackgroundColor(bg);
     }
 
     @Override

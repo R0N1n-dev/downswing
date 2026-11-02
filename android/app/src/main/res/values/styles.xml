@@ -38,11 +38,14 @@
     </style>
 
     <!-- Launch window: one flat ground colour, no seam into the boot sticker. The screen ignores
-         this and paints the queue the moment it is ready. -->
+         this and paints the queue the moment it is ready. postSplashScreenTheme is what hands the
+         window over to the real theme once the splash is dismissed; without it Android keeps the
+         splash theme and re-configures the window after the first frame, which reads as a jump. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@color/boot_ground</item>
         <item name="android:windowBackground">@color/boot_ground</item>
         <item name="android:statusBarColor">@color/boot_ground</item>
         <item name="android:windowLightStatusBar">false</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

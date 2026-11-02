@@ -32,8 +32,14 @@
   --font-d:"Archivo Black","Arial Black",Impact,sans-serif;
   --font-b:"Space Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
   --t:0.18s; /* nothing in the app animates longer than this */
-  --sat: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
-  --sab: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  /* Insets come from the native side (SystemBars insetsHandling: "native", see
+     capacitor.config.json), which pads the WebView before anything is painted. Deliberately NOT
+     reading Capacitor's injected --safe-area-inset-* variables: those are written with
+     evaluateJavascript AFTER the page commits, so anything sized from them jumps by the height of
+     the status bar a few frames into launch — that was the visible "screen shake" on open. env()
+     is resolved before the first paint and, with native inset handling, stays 0. */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
 }
 
 /* theme surfaces: light is paper + ink, dark is night paper with cream ink */
