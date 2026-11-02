@@ -25,6 +25,11 @@ const searching = ref(false)
 const query = ref('')
 const typeFilter = ref('')
 
+// The rows that were on screen when this view mounted. Only later arrivals animate in: sliding
+// a queue that was already there is the "shake" the app used to open with.
+const atOpen = new Set(items.value.map((i) => i.id))
+const isNew = (i) => !atOpen.has(i.id)
+
 // Multi-select on the finished lists: pick rows, delete in one go, undo from the snackbar.
 const selecting = ref(false)
 const picked = ref(new Set())
@@ -317,6 +322,7 @@ async function exportCsv() {
         <div class="list">
           <DownloadRow
             v-for="i in g.items" :key="i.id" :item="i" :selectable="selecting" :selected="picked.has(i.id)"
+            :enter="isNew(i)"
             @open="onRow(i)" @primary="primary(i)" @cancel="cancelRow(i)" @toggle="togglePick(i)"
           />
         </div>
@@ -325,7 +331,7 @@ async function exportCsv() {
     <div v-else-if="rows.length" class="list">
       <DownloadRow
         v-for="i in rows" :key="i.id" :item="i" :reorder="section.id === 'queued'"
-        :selectable="selecting" :selected="picked.has(i.id)"
+        :selectable="selecting" :selected="picked.has(i.id)" :enter="isNew(i)"
         @open="onRow(i)" @primary="primary(i)" @cancel="cancelRow(i)" @toggle="togglePick(i)"
         @up="store.move(i.id, -1)" @down="store.move(i.id, 1)"
       />

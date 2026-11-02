@@ -15,6 +15,8 @@ import { subFolderFor, targetPath } from '../lib/categories'
 const KEY = 'downly.downloads'
 const LIVE = ['downloading']
 let counter = 0
+// One folder warning per session: a batch of links should not repeat the same snackbar.
+let warnedFolder = false
 
 // Auto-retry: only for transient trouble (drops, timeouts, 5xx, rate limits) — never for
 // dead links or blocked media, where a retry would just burn time. Three attempts, growing wait.
@@ -446,10 +448,11 @@ export const useDownloadsStore = defineStore('downloads', () => {
       item.jobId = res.id
       item.saveTo = res.outputDir
       // A shared folder the user has not granted access to falls back to the app folder; say so
-      // instead of letting the file vanish into Android/data.
-      const wanted = targetPath(item.folder, item.subDir)
-      if (wanted && res.outputDir !== wanted) {
-        showToast('That folder is not writable, so this went to the app folder.', 4200)
+      // once per session instead of letting the file vanish into Android/data.
+      const wanted = item.folder ? targetPath(item.folder, item.subDir) : ''
+      if (wanted && res.outputDir !== wanted && !warnedFolder) {
+        warnedFolder = true
+        showToast('That folder is not writable yet, so this went to the app folder. Allow access in Settings.', 4600)
       }
     } catch (err) {
       fail(item, err?.message || String(err))

@@ -7,7 +7,14 @@ import {
 import FileTile from './FileTile.vue'
 import { rangeText, whenText } from '../lib/format'
 
-const props = defineProps({ item: { type: Object, required: true }, reorder: Boolean, selectable: Boolean, selected: Boolean })
+const props = defineProps({
+  item: { type: Object, required: true },
+  reorder: Boolean,
+  selectable: Boolean,
+  selected: Boolean,
+  // Rows that arrive after the screen is up slide in; the ones already there at launch do not.
+  enter: Boolean,
+})
 const emit = defineEmits(['open', 'primary', 'up', 'down', 'toggle', 'cancel'])
 
 // In selection mode a tap picks the row instead of opening it.
@@ -74,7 +81,7 @@ const bar = computed(() => {
 </script>
 
 <template>
-  <div class="row" :class="{ picked: selected }" role="link" tabindex="0" @click="tap" @keydown.enter="tap">
+  <div class="row" :class="{ picked: selected, enter }" role="link" tabindex="0" @click="tap" @keydown.enter="tap">
     <FileTile :name="item.name" :audio-only="item.audioOnly" :source="item.kind" :state="tileState" />
 
     <div class="row-body">

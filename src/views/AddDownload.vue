@@ -170,11 +170,11 @@ const canAdd = computed(() => (mode.value === 'link' ? !!torrentFile.value || ur
 // Where this download will actually land. The engines append the category folder
 // (Downswing/Video, Downswing/Audio…), so show the finished path, not just the root.
 const ROOT_FOLDER = CATEGORY_ROOT
+const organised = computed(() => settings.categoryFolders !== false)
 const saveTarget = computed(() => {
-  const organise = settings.categoryFolders !== false
   const single = links.value.length === 1 ? links.value[0] : ''
   const name = preview.value?.filename || guessName(single || url.value, kind.value || 'video')
-  const subDir = subFolderFor({ name, kind: kind.value || 'video', audioOnly: audioOnly.value, organise })
+  const subDir = subFolderFor({ name, kind: kind.value || 'video', audioOnly: audioOnly.value, organise: organised.value })
   return prettyPath(targetPath(folder.value, subDir))
 })
 
@@ -450,7 +450,9 @@ async function submit() {
         <option v-for="f in FOLDERS" :key="f.value" :value="f.value">{{ f.label }}</option>
       </select>
     </div>
-    <p class="hint">Files land in <b>{{ saveTarget }}</b>. Category folders keep video, audio, pictures and documents apart inside {{ ROOT_FOLDER }}.</p>
+    <p class="hint">Files land in <b>{{ saveTarget }}</b>{{ organised
+      ? `. Category folders keep video, audio, pictures and documents apart inside ${ROOT_FOLDER}.`
+      : '.' }}</p>
   </section>
 
   <FolderAccess :folder="folder" />
