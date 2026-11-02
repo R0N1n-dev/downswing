@@ -5,18 +5,10 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="dark light" />
-<<<<<<< HEAD
-    <title>Downswing</title>
-
-    <!-- Theme before the first frame. Waiting for main.js would flash the default dark ground
-         at light-theme users, and a colour flip right at launch reads as a glitch.
-         Reads the pre-rename storage key (see stores/settings.js) so existing installs keep theirs. -->
-=======
     <title>Downly</title>
 
     <!-- Theme before the first frame. Waiting for main.js would flash the default dark ground at
          light-theme users, and a colour flip right at launch reads as a glitch. -->
->>>>>>> github/cline/j2xq30gk
     <script>
       try {
         const saved = JSON.parse(localStorage.getItem('downly.settings') || '{}')
@@ -37,16 +29,10 @@
     <!-- Launch sticker, inline so it paints with the document instead of after the bundle.
          The window opens on the app's own ground with the launcher mark already in place, and
          main.js lifts it once the first render is at rest — so nothing shuffles into position
-         after the splash. It is deliberately plain: no animation but the fade out. -->
->>>>>>> github/cline/j2xq30gk
-    <style>
-      html { background: #131315; }
-      html[data-theme='light'] { background: #EFEAE0; }
       #boot { position: fixed; inset: 0; z-index: 999; display: grid; place-items: center;
         background: #131315; transition: opacity 0.18s linear; }
       html[data-theme='light'] #boot { background: #EFEAE0; }
 <<<<<<< HEAD
-      #boot svg { width: 96px; height: 96px; display: block; }
 =======
       #boot svg { width: 88px; height: 88px; display: block; }
 >>>>>>> github/cline/j2xq30gk
