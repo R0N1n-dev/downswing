@@ -18,13 +18,8 @@ The UI follows the pastel neo-brutalist signature spec (the “File Downloader �
 - **Type.** Archivo Black for titles, percentages and labels; Space Grotesk for everything else. Both load from `@fontsource` in `src/main.js`.
 - **Pastel meaning.** Mint = progress, lavender = video, peach = audio, blush = image/error, butter = waiting, sky = doc, lime = done. Every card says what it holds before you read the name.
 - **Signature moves.** Tape-style day headers (`.ghead`), a peel corner on the primary card (`.hero`, `.d-stage`), a progress dial (`.ring`), sticker buttons and chips.
-<<<<<<< HEAD
-- **Motion.** Every transition and keyframe runs at **0.2 s or less** (`--t` in `src/style.css`), so state changes slide, lift or pop instead of appearing out of nowhere. The screen itself renders in place — no entrance slide to jitter on launch, and nothing staggers in while the boot sticker is up (`html.booting`, cleared by `main.js`). `prefers-reduced-motion` turns all of it off.
-- **Opening.** `index.html` paints the saved theme and a full-screen sticker of the launcher mark **before** the bundle loads, so a cold start is one ground colour from the Android window through to the queue — no flash, no font swap, no rows shuffling into place. Vue mounts underneath the sticker, which then waits for the webfonts **and** for the first render's slide-ins to finish (0.28 s minimum hold so it never blinks, capped at 0.7 s) before fading over 0.18 s — so the reveal is always a still frame, never the tail of an animation. The window colour lives in `android/app/src/main/res/values/colors.xml` (`boot_ground`) and matches `--bg` in dark.
-=======
 - **Motion.** Every transition and keyframe runs at **0.2 s or less** (`--t` in `src/style.css`), so state changes slide, lift or pop instead of appearing out of nowhere. The screen renders in place — no entrance slide, and the rows that load with the app are painted rather than slid (only rows that arrive later get the `enter` animation) — so nothing jitters on launch. `prefers-reduced-motion` turns all of it off.
-- **Launch.** The window opens on an inline sticker of the launcher mark (`#boot` in `index.html`, drawn with the document, not after the bundle) over the app's own ground, with the saved theme already applied. `src/main.js` lifts it once the first render is at rest and the webfonts are in, so the app appears already in place instead of settling, re-measuring and re-centring for the first few frames. The shell is pinned with `position: fixed; inset: 0` rather than `100dvh`, which Android re-measures when its insets and status bar arrive.
->>>>>>> github/cline/j2xq30gk
+- **Opening.** `index.html` paints the saved theme and a full-screen sticker of the launcher mark **before** the bundle loads, so a cold start is one ground colour from the Android window through to the queue — no flash, no font swap, no rows shuffling into place. Vue mounts underneath the sticker, which then waits for the first paint and the webfonts (0.2 s minimum hold so it never blinks, capped at 0.9 s) before fading over 0.18 s. The window colour lives in `android/app/src/main/res/values/colors.xml` (`boot_ground`) and matches `--bg` in dark. The shell is pinned with `position: fixed; inset: 0` rather than `100dvh`, which Android re-measures when its insets and status bar arrive — that late resize was the remaining jump.
 - **Legibility.** Text colours are contrast-checked rather than palette-mixed: muted grey is 6.4:1 on paper, link/accent text is forced to ≥4.5:1 for every palette, and disabled controls stay at 60% opacity.
 - **Colour themes.** The palettes in `src/lib/themes.js` still drive the accent (buttons, active tabs, badges) while the paper stays paper.
 
@@ -57,11 +52,6 @@ src/
   components/        SideNav (drawer), Dock (status strip, only while the queue moves), DownloadRow, FileTile, ShareSheet, ConfirmSheet, Switch, Stepper, FolderAccess
   views/             Downloads (all sections), AddDownload, Details, Settings
   stores/            downloads (queue engine), settings (persisted preferences)
-<<<<<<< HEAD
-  lib/               detect, format, sections, share intake, toast, themes, options, lock
+  lib/               detect, format, sections, categories, back, share intake, toast, themes, options, lock
   services/          yt-dlp, aria2, native Downswing plugin, notifications
-=======
-  lib/               detect, format, sections, categories, share intake, toast, themes, options, lock
-  services/          yt-dlp, aria2, native Downly plugin, notifications
->>>>>>> github/cline/j2xq30gk
 ```

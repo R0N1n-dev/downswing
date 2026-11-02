@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Status bar matches the app's dark background so the icons stay light and readable. -->
-    <color name="status_bar">#0A101D</color>
+    <!-- Status bar matches the app's dark background so the icons stay light and readable.
+         Same value as @color/boot_ground: the splash, the window behind the WebView and the app
+         ground are one colour, so the launch has no visible seam. -->
+    <color name="status_bar">#131315</color>
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
