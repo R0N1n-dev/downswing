@@ -10,6 +10,7 @@ import { useSettingsStore } from './settings'
 import { formatFor } from '../lib/options'
 import { formatBytes, formatEta, parseSize, basename, hostOf, friendlyError } from '../lib/format'
 import { sanitizeUrl, isInstagram } from '../lib/detect'
+import { subFolderFor, targetPath } from '../lib/categories'
 
 const KEY = 'downly.downloads'
 const LIVE = ['downloading']
@@ -44,7 +45,7 @@ function load() {
   try {
     const list = JSON.parse(localStorage.getItem(KEY) || '[]')
     // A download that was running when the app died is resumable, not running.
-    return list.map((i) => ({ kind: 'video', peers: '', retries: 0, limitKb: null, ...i,
+    return list.map((i) => ({ kind: 'video', peers: '', retries: 0, limitKb: null, subDir: '', ...i,
       // A download or a pending retry that was running when the app died is resumable, not running.
       ...(LIVE.includes(i.status) || i.status === 'retrying' ? { status: 'paused', speed: '', eta: '' } : {}) }))
   } catch {
@@ -281,6 +282,9 @@ export const useDownloadsStore = defineStore('downloads', () => {
         quality: settings.quality,
         audioOnly: false,
         folder: '/storage/emulated/0/Download',
+        // The widget runner files its work under Downswing without a category (it cannot know
+        // the type before the download starts) — see WidgetRunner.run in android/.
+        subDir: 'Downswing',
         saveTo: '',
         filePath: j.path || '',
         status,
@@ -420,6 +424,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
         ? await YtDlp.start({
             url: item.url,
             outputDir: item.folder,
+            subDir: item.subDir || '',
             format: formatFor(item.quality, item.audioOnly),
             convertAudio: item.audioOnly,
             audioFormat: 'mp3',
@@ -429,6 +434,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
         : await Aria2.start({
             source: item.url,
             outputDir: item.folder,
+            subDir: item.subDir || '',
             rateLimitKb,
             selectFile: item.selectFile || '',
           })
@@ -439,7 +445,10 @@ export const useDownloadsStore = defineStore('downloads', () => {
       }
       item.jobId = res.id
       item.saveTo = res.outputDir
-      if (item.folder && res.outputDir !== item.folder) {
+      // A shared folder the user has not granted access to falls back to the app folder; say so
+      // instead of letting the file vanish into Android/data.
+      const wanted = targetPath(item.folder, item.subDir)
+      if (wanted && res.outputDir !== wanted) {
         showToast('That folder is not writable, so this went to the app folder.', 4200)
       }
     } catch (err) {
@@ -470,8 +479,15 @@ export const useDownloadsStore = defineStore('downloads', () => {
     const url = sanitizeUrl(rawUrl)
     const dup = items.value.find((i) => i.url === url && ['queued', 'downloading', 'paused', 'retrying'].includes(i.status))
     if (dup) throw new Error('That link is already in your list.')
-    // Rule: with the default folder, audio-only downloads land in Music.
-    const dest = audioOnly && settings.smartAudioFolder && !folder ? '/storage/emulated/0/Music' : folder
+    const label = name || hostOf(url)
+    // Category folders: the root is only the top of the tree, the engine adds
+    // Downswing/<Category> under it (see lib/categories.js), so a video lands in
+    // Downloads/Downswing/Video and an album track in Downloads/Downswing/Audio.
+    const organise = settings.categoryFolders !== false
+    // Legacy shortcut, still honoured when category folders are off: audio-only goes to Music.
+    const toMusic = !organise && audioOnly && settings.smartAudioFolder && !folder
+    const root = toMusic ? '/storage/emulated/0/Music' : folder
+    const subDir = toMusic ? '' : subFolderFor({ name: label, kind, audioOnly, organise })
     const item = {
       id: `d${Date.now().toString(36)}${counter++}`,
       jobId: null,
@@ -479,10 +495,11 @@ export const useDownloadsStore = defineStore('downloads', () => {
       selectFile,
       peers: '',
       url,
-      name: name || hostOf(url),
+      name: label,
       quality,
       audioOnly,
-      folder: dest,
+      folder: root,
+      subDir,
       saveTo: '',
       filePath: '',
       status: startNow ? 'queued' : 'paused',

@@ -1,13 +1,16 @@
 import { defineStore } from 'pinia'
 import { reactive, watch } from 'vue'
 import { StatusBar, Style as StatusBarStyle } from '@capacitor/status-bar'
-import { QUALITIES } from '../lib/options'
+import { QUALITIES, DEFAULT_FOLDER } from '../lib/options'
 import { PALETTE_IDS } from '../lib/themes'
 
 const KEY = 'downly.settings'
 
 const defaults = () => ({
-  folder: '',
+  // Download root. '' means the private app folder; anything else is a shared device folder.
+  folder: DEFAULT_FOLDER,
+  // Split that root into Downswing/<Category> — see lib/categories.js.
+  categoryFolders: true,
   maxSimultaneous: 3,
   maxSpeedKb: 0,
   quality: 720,
@@ -28,6 +31,13 @@ function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || '{}')
     const merged = { ...defaults(), ...saved }
+    // Installs from before category folders defaulted to the private app folder, which a file
+    // manager cannot reach. Move them onto the new layout — Downloads/Downswing/<Category> —
+    // unless they had picked a folder of their own. One-time: the flag is saved from now on.
+    if (saved.categoryFolders === undefined) {
+      merged.categoryFolders = true
+      if (!saved.folder) merged.folder = DEFAULT_FOLDER
+    }
     if (!QUALITIES.includes(merged.quality)) merged.quality = 720
     if (!PALETTE_IDS.includes(merged.palette)) merged.palette = 'default'
     return merged
@@ -35,6 +45,7 @@ function load() {
     return defaults()
   }
 }
+
 
 export const useSettingsStore = defineStore('settings', () => {
   const s = reactive(load())

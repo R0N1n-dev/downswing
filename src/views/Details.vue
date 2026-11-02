@@ -10,6 +10,7 @@ import { useDownloadsStore } from '../stores/downloads'
 import FileTile from '../components/FileTile.vue'
 import { formatDate, rangeText } from '../lib/format'
 import { KIND_LABEL } from '../lib/detect'
+import { targetPath, prettyPath } from '../lib/categories'
 
 const route = useRoute()
 const router = useRouter()
@@ -150,9 +151,12 @@ async function verifyHash() {
 
 const rows = computed(() => {
   const i = item.value
+  // Before the job starts only the root and the category folder are known; once it runs the
+  // engine reports the folder it actually used (which may be the app-folder fallback).
+  const target = i.filePath || i.saveTo || prettyPath(targetPath(i.folder, i.subDir))
   return [
     ['URL', i.url],
-    ['Save location', i.filePath || i.saveTo || (i.folder || 'App folder')],
+    ['Save location', target],
     ['Type', KIND_LABEL[i.kind] || 'Video'],
     (i.kind === 'video' || !i.kind) && ['Quality', i.audioOnly ? 'Audio only (MP3)' : `Up to ${i.quality}p`],
     ['Added', formatDate(i.createdAt)],

@@ -2,13 +2,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { HugeiconsIcon } from '@hugeicons/vue'
-import { Folder01Icon, ArrowLeft01Icon, CookieIcon, Wifi01Icon, BoltIcon } from '@hugeicons/core-free-icons'
+import { Folder01Icon, ArrowLeft01Icon, CookieIcon, Wifi01Icon, BoltIcon, FolderTreeIcon } from '@hugeicons/core-free-icons'
 import { YtDlp } from '../services/ytdlp'
 import { Downly } from '../services/downly'
 import { useSettingsStore } from '../stores/settings'
 import { useDownloadsStore } from '../stores/downloads'
 import { formatBytes, parseSize } from '../lib/format'
 import { QUALITIES, FOLDERS } from '../lib/options'
+import { CATEGORIES, CATEGORY_ROOT, prettyPath } from '../lib/categories'
 import { PALETTES } from '../lib/themes'
 import { showToast } from '../lib/toast'
 import Switch from '../components/Switch.vue'
@@ -83,6 +84,13 @@ function clearCookie() {
 
 const speed = (kb) => (kb === 0 ? 'No limit' : kb >= 1024 ? `${(kb / 1024).toFixed(kb % 1024 ? 1 : 0)} MB/s` : `${kb} KB/s`)
 
+// Where this install actually files its downloads, shown as the paths a file manager will show.
+const ROOT = CATEGORY_ROOT
+const folderTree = computed(() => {
+  const base = prettyPath(s.folder)
+  return CATEGORIES.map((c) => ({ dir: c.dir, path: s.categoryFolders ? `${base}/${CATEGORY_ROOT}/${c.dir}` : base }))
+})
+
 function reset() {
   if (confirm('Reset all settings to defaults?')) {
     store.reset()
@@ -106,7 +114,19 @@ function reset() {
       </select>
     </label>
     <div class="pad-block"><FolderAccess :folder="s.folder" /></div>
-    <p class="hint pad">The app folder lives under Android/data and is hard to browse. Pick Download or another shared folder to see files in your file manager.</p>
+    <div class="setting"><span class="s-label"><HugeiconsIcon :icon="FolderTreeIcon" :size="17" /> Sort into category folders</span>
+      <Switch v-model="s.categoryFolders" label="Sort downloads into category folders" />
+    </div>
+    <p class="hint pad">
+      Everything is filed under <b>{{ ROOT }}</b>: one folder per kind, so videos, music, pictures and
+      documents never land on top of each other. Folders are created as they are needed.
+    </p>
+    <div v-if="s.categoryFolders" class="folders" aria-label="Category folders">
+      <div v-for="f in folderTree" :key="f.dir" class="folder-line">
+        <HugeiconsIcon :icon="Folder01Icon" :size="15" :stroke-width="2" />
+        <span class="folder-path">{{ f.path }}</span>
+      </div>
+    </div>
     <div class="setting"><span>Default quality</span>
       <select v-model.number="s.quality" class="plain right">
         <option v-for="q in QUALITIES" :key="q" :value="q">{{ q }}p</option>
@@ -115,7 +135,7 @@ function reset() {
     <div class="setting"><span>Max simultaneous downloads</span><Stepper v-model="s.maxSimultaneous" :min="1" :max="6" /></div>
     <div class="setting"><span>Max download speed</span><Stepper v-model="s.maxSpeedKb" :min="0" :max="20480" :step="512" :format="speed" /></div>
     <div class="setting"><span>Start downloads automatically</span><Switch v-model="s.startAuto" label="Start downloads automatically" /></div>
-    <div class="setting"><span>Audio downloads go to Music</span><Switch v-model="s.smartAudioFolder" label="Audio downloads go to Music" /></div>
+    <div v-if="!s.categoryFolders" class="setting"><span>Audio downloads go to Music</span><Switch v-model="s.smartAudioFolder" label="Audio downloads go to Music" /></div>
   </div>
 
   <h2 class="section-title">Network</h2>

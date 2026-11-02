@@ -10,6 +10,7 @@ import { useDownloadsStore } from '../stores/downloads'
 import { SECTIONS } from '../lib/sections'
 import { KIND_LABEL } from '../lib/detect'
 import { formatBytes, parseSize, rangeText, finishedTodayBytes, fileKind, dayLabel } from '../lib/format'
+import { targetPath, prettyPath } from '../lib/categories'
 import { showToast } from '../lib/toast'
 import { Downly } from '../services/downly'
 import DownloadRow from '../components/DownloadRow.vue'
@@ -196,7 +197,7 @@ async function exportCsv() {
   for (const i of items.value) {
     lines.push([
       i.name, i.url, KIND_LABEL[i.kind] || 'Video', CSV_STATUS[i.status] || i.status, i.totalText || '',
-      i.folder || 'App folder', i.filePath || '',
+      prettyPath(targetPath(i.folder, i.subDir)), i.filePath || '',
       i.createdAt ? new Date(i.createdAt).toISOString() : '',
       i.startedAt ? new Date(i.startedAt).toISOString() : '',
       i.finishedAt ? new Date(i.finishedAt).toISOString() : '',

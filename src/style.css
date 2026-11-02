@@ -381,6 +381,13 @@ select optgroup { background: var(--paper); color: var(--muted); font-weight: 70
   box-shadow: var(--sh-xs); }
 .swatch-note { font-size: 12.5px; margin-left: 4px; }
 
+/* the folder tree a download can land in, listed under the folder setting */
+.folders { display: flex; flex-direction: column; gap: 5px; padding: 2px 16px 14px; }
+.folder-line { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.folder-path { font-size: 12px; font-weight: 600; overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums; }
+
+
 /* settings — theme segmented control, palette sticker grid, plain text input */
 .setting .seg { width: 196px; flex: none; }
 .seg.three > * { font-size: 11px; }
