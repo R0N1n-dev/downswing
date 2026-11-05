@@ -15,6 +15,7 @@ import { subFolderFor, targetPath, prettyPath, CATEGORY_ROOT } from '../lib/cate
 import { showToast } from '../lib/toast'
 import { consumeShared } from '../lib/share'
 import { Downswing } from '../services/downswing'
+import { photosFrom } from '../services/photos'
 import Switch from '../components/Switch.vue'
 import FolderAccess from '../components/FolderAccess.vue'
 import { formatBytes } from '../lib/format'
@@ -154,6 +155,39 @@ const fileList = ref(null) // { torrentPath, files: [{ index, path, size, on }] 
 const inspecting = ref(false)
 let inspectId = ''
 
+// Instagram (and any page we read this way) publishes its photos in the document head. They are
+// plain direct links, so each selected item goes through the normal queue — no photo-specific
+// download path, and the extension decides the folder (pictures vs video).
+const postMedia = ref(null) // [{ url, kind, name, on }]
+const scanningMedia = ref(false)
+let mediaTimer
+
+watch([links, () => kind.value, () => audioOnly.value], ([list, k, audio]) => {
+  clearTimeout(mediaTimer)
+  postMedia.value = null
+  scanningMedia.value = false
+  const target = list.length === 1 ? list[0] : ''
+  // Only social posts: a plain file link is already exactly what the user asked for. Audio-only
+  // means the user wants an MP3, so photos are not what they are after.
+  if (!target || k !== 'video' || audio || !isInstagram(target)) return
+  scanningMedia.value = true
+  mediaTimer = setTimeout(async () => {
+    try {
+      const media = await photosFrom(target, { cookie: settings.igCookie })
+      if (links.value[0] !== target) return // the field moved on while we were reading
+      // Only take over when the post actually has photos in it. A pure video (a reel) is better
+      // left to yt-dlp on the page URL, where the ladder and the merging already work.
+      postMedia.value = media.some((m) => m.kind === 'image') ? media.map((m) => ({ ...m, on: true })) : null
+    } catch {
+      postMedia.value = null
+    } finally {
+      scanningMedia.value = false
+    }
+  }, 550)
+})
+
+const chosenMedia = computed(() => (postMedia.value || []).filter((m) => m.on))
+
 const chosen = computed(() => (fileList.value ? fileList.value.files.filter((f) => f.on) : []))
 const chosenSize = computed(() => chosen.value.reduce((sum, f) => sum + f.size, 0))
 watch([url, torrentFile], () => { fileList.value = null })
@@ -165,7 +199,12 @@ const searching = ref(false)
 const results = ref([])
 const picked = ref(new Set())
 
-const canAdd = computed(() => (mode.value === 'link' ? !!torrentFile.value || url.value.trim().length > 0 : picked.value.size > 0))
+const canAdd = computed(() => {
+  if (mode.value !== 'link') return picked.value.size > 0
+  // A post with its own media picker only adds what is actually ticked.
+  if (postMedia.value?.length) return chosenMedia.value.length > 0
+  return !!torrentFile.value || url.value.trim().length > 0
+})
 
 // Where this download will actually land. The engines append the category folder
 // (Downswing/Video, Downswing/Audio…), so show the finished path, not just the root.
@@ -177,6 +216,11 @@ const saveTarget = computed(() => {
   const subDir = subFolderFor({ name, kind: kind.value || 'video', audioOnly: audioOnly.value, organise: organised.value })
   return prettyPath(targetPath(folder.value, subDir))
 })
+// Where a picture goes, so the post picker can say it before anything is queued.
+const photoTarget = computed(() => prettyPath(targetPath(
+  folder.value,
+  subFolderFor({ name: 'photo.jpg', kind: 'file', organise: organised.value }),
+)))
 
 async function paste() {
   try {
@@ -267,6 +311,31 @@ async function submit() {
   const base = { quality: quality.value, folder: folder.value, startNow: startNow.value }
   try {
     if (mode.value === 'link') {
+      // A post we could read: add the chosen photos and videos themselves, not the page.
+      if (postMedia.value?.length) {
+        const picks = chosenMedia.value
+        if (!picks.length) throw new Error('Pick at least one photo or video.')
+        let added = 0
+        for (const m of picks) {
+          try {
+            store.add({
+              ...base,
+              url: m.url,
+              name: m.name,
+              // A photo or a video inside a post is a direct CDN file: aria2 fetches it in one
+              // block, and the extension decides the folder (Pictures vs Video).
+              kind: 'file',
+              audioOnly: false,
+            })
+            added++
+          } catch { /* duplicate: already queued */ }
+        }
+        if (!added) throw new Error('Those are already in your list.')
+        ensureNotifyPermission()
+        showToast(`Added ${added} ${added === 1 ? 'item' : 'items'} to the queue`)
+        router.replace('/')
+        return
+      }
       if (fileList.value) {
         if (!chosen.value.length) throw new Error('Select at least one file.')
         const all = chosen.value.length === fileList.value.files.length
@@ -363,6 +432,31 @@ async function submit() {
       <p v-if="previewWarn" class="pv-warn"><HugeiconsIcon :icon="TriangleAlertIcon" :size="14" /> {{ previewWarn }}</p>
     </div>
 
+    <!-- Photos and videos the post publishes: each one becomes its own queue row. -->
+    <div v-if="scanningMedia" class="preview-card dim">
+      <HugeiconsIcon :icon="EyeIcon" :size="18" />
+      <span class="pv-name">Looking for photos in this post…</span>
+    </div>
+    <template v-else-if="postMedia?.length">
+      <div class="files-head">
+        <span class="num">{{ chosenMedia.length }} of {{ postMedia.length }} selected</span>
+        <span>
+          <button class="text-btn" @click="postMedia.forEach((m) => (m.on = true))">All</button>
+          <button class="text-btn" @click="postMedia.forEach((m) => (m.on = false))">None</button>
+        </span>
+      </div>
+      <div class="list picks">
+        <button v-for="m in postMedia" :key="m.url" class="pick media" :class="{ on: m.on }"
+          role="checkbox" :aria-checked="m.on" @click="m.on = !m.on">
+          <span class="check"><HugeiconsIcon v-if="m.on" :icon="CheckIcon" :size="14" :stroke-width="3" /></span>
+          <img class="pick-thumb" :src="m.url" alt="" loading="lazy" referrerpolicy="no-referrer">
+          <span class="pick-name">{{ m.name }}</span>
+          <span class="num muted">{{ m.kind === 'video' ? 'Video' : 'Photo' }}</span>
+        </button>
+      </div>
+      <p class="hint">Photos are saved to <b>{{ photoTarget }}</b>; any video in the post goes to its video folder.</p>
+    </template>
+
     <div v-if="torrentFile" class="picked-file">
       <HugeiconsIcon :icon="FileUploadIcon" :size="18" />
       <span class="grow-text">{{ torrentFile.name }}.torrent</span>
@@ -370,7 +464,7 @@ async function submit() {
     </div>
     <button v-else class="link-btn" @click="fileInput.click()"><HugeiconsIcon :icon="FileUploadIcon" :size="16" /> Choose a .torrent file</button>
     <button class="link-btn" @click="txtInput.click()"><HugeiconsIcon :icon="File01Icon" :size="16" /> Import links from a text file</button>
-    <p v-if="kind === 'video' && igHost" class="hint">Instagram posts, reels and stories are supported — private or age-restricted posts need you to be logged in.</p>
+    <p v-if="kind === 'video' && igHost" class="hint">Instagram posts, reels and stories are supported — photos in a post are listed above so you can pick which ones to keep. Private or age-restricted posts need you to be logged in.</p>
     <template v-if="kind === 'torrent'">
       <p class="hint">Torrents download over BitTorrent and stop sharing when they finish.</p>
 

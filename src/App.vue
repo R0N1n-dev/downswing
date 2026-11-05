@@ -15,7 +15,8 @@ import { useSettingsStore } from './stores/settings'
 import { toast, toastAct, runToastAction, showToast } from './lib/toast'
 import { pollShared, consumeShared } from './lib/share'
 import { drawerOpen, closeDrawer } from './lib/drawer'
-import { detectKind, guessName } from './lib/detect'
+import { detectKind, guessName, isInstagram } from './lib/detect'
+import { photosFrom } from './services/photos'
 import { ensureNotifyPermission } from './services/notify'
 import { locked, lockError, checkLock, unlock } from './lib/lock'
 import { watchLaunch } from './lib/launch'
@@ -56,26 +57,44 @@ function sheetOptions() {
 }
 
 // Straight into the queue with the current defaults: the fast path out of a share sheet.
-function sheetDownload() {
+// A shared social post is a container: we queue the photos and videos it publishes rather than the
+// page itself, which is what the user meant by sharing it.
+async function sheetDownload() {
   const pending = consumeShared()
   sharedLinks.value = []
   if (!pending) return
+  ensureNotifyPermission()
   let added = 0
   let skipped = 0
   let reason = ''
+  const add = (fields) => {
+    downloads.add({
+      audioOnly: false,
+      quality: settings.quality,
+      folder: settings.folder,
+      startNow: settings.startAuto,
+      ...fields,
+    })
+    added++
+  }
   for (const url of pending.split(/\s+/).filter(Boolean)) {
+    if (isInstagram(url)) {
+      try {
+        const media = await photosFrom(url, { cookie: settings.igCookie })
+        // Only take over when the post has photos; a pure video stays with yt-dlp on the page.
+        if (media.some((m) => m.kind === 'image')) {
+          for (const m of media) {
+            try {
+              add({ url: m.url, name: m.name, kind: 'file' })
+            } catch { skipped++ }
+          }
+          continue
+        }
+      } catch { /* fall through to the normal add below */ }
+    }
     try {
       const kind = detectKind(url) === 'torrent' ? 'torrent' : detectKind(url) || 'video'
-      downloads.add({
-        url,
-        name: guessName(url, kind),
-        kind,
-        audioOnly: false,
-        quality: settings.quality,
-        folder: settings.folder,
-        startNow: settings.startAuto,
-      })
-      added++
+      add({ url, name: guessName(url, kind), kind })
     } catch (e) {
       skipped++
       reason = e.message
@@ -85,7 +104,6 @@ function sheetDownload() {
     showToast(reason || 'Could not add that link')
     return
   }
-  ensureNotifyPermission()
   showToast(skipped ? `Added ${added} · ${skipped} skipped` : `Added ${added} to the queue`, 3000)
   if (route.path !== '/') router.push('/')
 }

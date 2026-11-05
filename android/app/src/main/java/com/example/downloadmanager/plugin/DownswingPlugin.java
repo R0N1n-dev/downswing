@@ -315,6 +315,68 @@ public class DownswingPlugin extends Plugin {
         });
     }
 
+    /**
+     * Fetch a public page as HTML so the web layer can read the media it publishes.
+     *
+     * Instagram (and most social pages) list their photos and videos in the head of the document —
+     * `application/ld+json`, `og:image`, `og:video`. A Capacitor WebView cannot read that itself
+     * (cross-origin), so the request is made here with a browser user agent, an optional Cookie
+     * header for logged-in posts, and a hard cap on how much markup we keep.
+     */
+    @PluginMethod
+    public void fetchPage(PluginCall call) {
+        String url = call.getString("url", "").trim();
+        if (url.isEmpty() || !(url.startsWith("http://") || url.startsWith("https://"))) {
+            call.reject("A http(s) link is required", "NO_URL");
+            return;
+        }
+        // Only ever sent to the page the user asked for; the caller supplies it from Settings.
+        String cookie = call.getString("cookie", null);
+        executor.execute(() -> {
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) new URL(url).openConnection();
+                conn.setInstanceFollowRedirects(true);
+                conn.setConnectTimeout(8000);
+                conn.setReadTimeout(12000);
+                conn.setRequestProperty("User-Agent",
+                    "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36");
+                conn.setRequestProperty("Accept", "text/html,application/xhtml+xml");
+                conn.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
+                if (cookie != null && !cookie.trim().isEmpty()) {
+                    conn.setRequestProperty("Cookie", cookie.trim());
+                }
+                int status = conn.getResponseCode();
+                String type = conn.getContentType();
+                if (type != null && !type.toLowerCase(java.util.Locale.US).contains("html")) {
+                    call.reject("That link is not a web page", "NOT_HTML");
+                    return;
+                }
+                // 1.2 M chars is far more than these pages need; anything past it is images inlined
+                // as base64, which the parser ignores anyway.
+                StringBuilder html = new StringBuilder(64 * 1024);
+                try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(conn.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+                    char[] buf = new char[16 * 1024];
+                    int n;
+                    while ((n = reader.read(buf)) > 0) {
+                        html.append(buf, 0, n);
+                        if (html.length() >= 1200000) break;
+                    }
+                }
+                JSObject out = new JSObject();
+                out.put("status", status);
+                out.put("url", conn.getURL().toString());
+                out.put("html", html.toString());
+                call.resolve(out);
+            } catch (Exception e) {
+                call.reject("Could not read that page", "FETCH_FAILED");
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        });
+    }
+
     private static String filenameFrom(String disposition, String url) {
         try {
             if (disposition != null) {

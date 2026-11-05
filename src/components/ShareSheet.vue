@@ -15,7 +15,15 @@ const hostOf = (url) => {
   if (isMagnet(url)) return 'Magnet link'
   try { return new URL(url).hostname.replace(/^www\./, '') } catch { return url }
 }
+// A social post is a container, not a file: say so, because "Download now" adds the photos and
+// videos inside it rather than the page.
+const isPost = (url) => {
+  if (isMagnet(url)) return false
+  if (detectKind(url) !== 'video') return false
+  return /(^|\.)instagram\.com$/i.test(hostOf(url).toLowerCase()) || /\/(p|reel|reels|tv)\//i.test(url)
+}
 const kindOf = (url) => {
+  if (isPost(url)) return 'Post'
   const k = detectKind(url)
   return k ? KIND_LABEL[k] : 'Link'
 }
@@ -53,7 +61,7 @@ const kindOf = (url) => {
       </button>
     </div>
 
-    <p class="sheet-note">Caught from Android's share sheet — pick what to do with it.</p>
+    <p class="sheet-note">{{ shown.some(isPost) ? 'Download now adds every photo and video in the post — Options lets you pick.' : "Caught from Android's share sheet — pick what to do with it." }}</p>
   </div>
 </template>
 
